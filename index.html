@@ -311,11 +311,25 @@ const INITIAL_SCENES = migrateScenes(INITIAL_SCENES_RAW);
 // ============================================================
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
+// Acepta: "" → 0, "30" → 30s, "5:30" → 5m30s, "1:05:30" → 1h5m30s,
+// y todo lo que ya estaba ("00:05:00"). Si no parsea, devuelve 0 y la función de normalización
+// devuelve el input original sin tocar (para no destruir lo que el usuario escribió).
 const parseDurationToSec = (str) => {
-  if (!str) return 0;
-  const m = String(str).match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
-  if (!m) return 0;
-  return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]);
+  if (str === null || str === undefined) return 0;
+  const trimmed = String(str).trim();
+  if (!trimmed) return 0;
+  // Solo dígitos: lo interpretamos como minutos (uso más común; "5" → 5 minutos)
+  if (/^\d+$/.test(trimmed)) return (+trimmed) * 60;
+  // mm:ss o hh:mm:ss (con horas/minutos de 1-2 dígitos, segundos siempre 2 dígitos)
+  const parts = trimmed.split(':');
+  if (parts.length < 2 || parts.length > 3) return 0;
+  if (!parts.every(p => /^\d+$/.test(p))) return 0;
+  const nums = parts.map(Number);
+  let h = 0, m = 0, s = 0;
+  if (nums.length === 2) { [m, s] = nums; }
+  else { [h, m, s] = nums; }
+  if (m >= 60 || s >= 60) return 0; // input inválido
+  return h * 3600 + m * 60 + s;
 };
 const formatSecToDuration = (sec) => {
   if (!sec) return '00:00:00';
@@ -323,6 +337,15 @@ const formatSecToDuration = (sec) => {
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+// Normaliza al formato canónico HH:MM:SS. Si el input es vacío o no parsea, lo devuelve
+// como string vacío (vacío) o sin tocar (no parsea) para no descartar lo que el usuario escribió.
+const normalizeDuration = (str) => {
+  const trimmed = String(str || '').trim();
+  if (!trimmed) return '';
+  const sec = parseDurationToSec(trimmed);
+  if (sec === 0 && trimmed !== '0' && trimmed !== '00:00:00' && trimmed !== '0:00') return trimmed;
+  return formatSecToDuration(sec);
 };
 const formatSecCompact = (sec) => {
   if (!sec) return '—';
@@ -986,7 +1009,14 @@ function TableView({ scenes, onUpdate, onUpdateSesion, onDeleteSesion, onAddSesi
                 })}
                 <Td>
                   {isAdmin
-                    ? <input className="cell-input" value={s.duracion} onChange={e => onUpdate(s.id, { duracion: e.target.value })} placeholder="00:00:00" style={{ width: 78, fontVariantNumeric: 'tabular-nums' }}/>
+                    ? <input className="cell-input" value={s.duracion}
+                        onChange={e => onUpdate(s.id, { duracion: e.target.value })}
+                        onBlur={e => {
+                          const norm = normalizeDuration(e.target.value);
+                          if (norm !== s.duracion) onUpdate(s.id, { duracion: norm });
+                        }}
+                        placeholder="ej: 5 o 5:30" style={{ width: 78, fontVariantNumeric: 'tabular-nums' }}
+                        title="Aceptado: '5' (5 min), '5:30' (5m 30s), '1:05:30' (1h 5m 30s)"/>
                     : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.duracion || '—'}</span>}
                 </Td>
                 <Td>
@@ -1145,10 +1175,18 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
             <ModalInputOrText ro={ro} value={draft.nombre} onChange={e => setDraft({ ...draft, nombre: e.target.value })} style={{ fontSize: 15, fontFamily: "'Fraunces', Georgia, serif" }}/>
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: 12 }}>
-            <Field label="Duración (HH:MM:SS)">
+            <Field label="Duración">
               {ro
                 ? <div className="modal-input" style={{ minHeight: 32, fontVariantNumeric: 'tabular-nums', maxWidth: 180 }}>{draft.duracion || '—'}</div>
-                : <input className="modal-input" style={{ width: 180, fontVariantNumeric: 'tabular-nums' }} value={draft.duracion} onChange={e => setDraft({ ...draft, duracion: e.target.value })} placeholder="00:05:00"/>}
+                : <input className="modal-input" style={{ width: 180, fontVariantNumeric: 'tabular-nums' }}
+                    value={draft.duracion}
+                    onChange={e => setDraft({ ...draft, duracion: e.target.value })}
+                    onBlur={e => {
+                      const norm = normalizeDuration(e.target.value);
+                      if (norm !== draft.duracion) setDraft({ ...draft, duracion: norm });
+                    }}
+                    placeholder="ej: 5 o 5:30 o 1:05:30"
+                    title="Aceptado: '5' (5 min), '5:30' (5m 30s), '1:05:30' (1h 5m 30s)"/>}
             </Field>
           </div>
           <Field label={`Sesiones de ensayo${(draft.sesiones || []).length > 0 ? ` (${(draft.sesiones || []).length})` : ''}`}>
