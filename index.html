@@ -105,6 +105,24 @@
       border-radius: 2px;
       pointer-events: none;
     }
+    .scene-card.is-drop-conflict::before {
+      content: '';
+      position: absolute;
+      left: -1px; right: -1px;
+      top: -5px;
+      height: 3px;
+      background: var(--muted);
+      border-radius: 2px;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .scene-card.is-drop-conflict {
+      cursor: not-allowed !important;
+    }
+    .col-drop.is-conflict {
+      background: rgba(138,125,107,0.18);
+      border-color: rgba(138,125,107,0.35);
+    }
     .col-drop {
       background: rgba(235,226,207,0.5);
       border: 1px solid transparent;
@@ -235,7 +253,7 @@ function charTooltip(c) {
   return `${c} — mismo actor que ${otros.join(', ')}`;
 }
 
-const INITIAL_SCENES = [
+const INITIAL_SCENES_RAW = [
   { id: 's1',  acto: 'Prólogo',        nombre: 'Un gusto, Ariel',           numero: '1',  duracion: '00:04:00', planificado: '2026-04-16', ensayado: '2026-04-16', personajes: ['Ari', 'Car'] },
   { id: 's2',  acto: 'Motín',          nombre: 'Hasta acá tu gestión',      numero: '2',  duracion: '00:13:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car', 'Jua', 'Her', 'Let', 'Tan'] },
   { id: 's3',  acto: 'Reemplazo',      nombre: 'Tu consorcio mejoró',       numero: '9',  duracion: '00:10:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Bet', 'Jua', 'Her', 'Let', 'Tan'] },
@@ -262,12 +280,39 @@ const INITIAL_SCENES = [
   { id: 's24', acto: 'Epílogo',        nombre: 'Ficus Lyrata',              numero: '24', duracion: '',         planificado: '2026-06-04', ensayado: '',           personajes: [] },
 ];
 
+// Las escenas iniciales se "migran" al formato nuevo (con array de sesiones) en tiempo
+// de carga; así no hace falta reescribir las 24 entries de arriba a mano.
+const INITIAL_SCENES = INITIAL_SCENES_RAW.map(s => {
+  const { planificado, ensayado, ...rest } = s;
+  return {
+    ...rest,
+    sesiones: (planificado || ensayado)
+      ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
+      : [],
+  };
+});
+
 // ============================================================
 // HELPERS
 // ============================================================
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 const newId = () => 'sc_' + Math.random().toString(36).slice(2, 10);
+const newSesionId = () => 'ses_' + Math.random().toString(36).slice(2, 10);
+
+// Migra una escena en formato viejo (planificado/ensayado planos) al formato con sesiones.
+// Si ya tiene 'sesiones', se devuelve tal cual.
+function migrateScene(s) {
+  if (Array.isArray(s.sesiones)) return s;
+  const { planificado, ensayado, ...rest } = s;
+  const sesiones = (planificado || ensayado)
+    ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
+    : [];
+  return { ...rest, sesiones };
+}
+function migrateScenes(arr) {
+  return arr.map(migrateScene);
+}
 
 const parseDurationToSec = (str) => {
   if (!str) return 0;
@@ -372,7 +417,7 @@ async function loadFromGithub(repo) {
   if (!Array.isArray(data)) {
     throw new Error(`${DATA_FILE} no contiene un array de escenas`);
   }
-  return { scenes: data, missing: false };
+  return { scenes: migrateScenes(data), missing: false };
 }
 
 async function fetchCurrentSha(repo, token) {
@@ -485,27 +530,30 @@ function CharacterRow({ personajes }) {
   );
 }
 
-function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin, isDropTarget, onHoverAsDropTarget }) {
-  const isRehearsed = !!scene.ensayado;
+function SceneCard({
+  scene, sesion, onEdit, isDragging, onDragStart, onDragEnd, isAdmin,
+  isDropTarget, onHoverAsDropTarget, dropConflict, multiSession,
+}) {
+  const isRehearsed = !!sesion.ensayado;
   const draggable = isAdmin;
+  const dragId = sesion.id; // la unidad de drag es la sesión
   const dragHandlers = isAdmin ? {
     draggable: true,
     onDragStart: (e) => {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', scene.id);
-      onDragStart(scene.id);
+      // Alt durante el dragstart = duplicar
+      const isCopy = e.altKey;
+      e.dataTransfer.effectAllowed = isCopy ? 'copy' : 'move';
+      e.dataTransfer.setData('text/plain', dragId);
+      onDragStart(dragId, isCopy);
     },
     onDragEnd: onDragEnd,
   } : {};
-  // Cuando se arrastra OTRA tarjeta y pasa por encima de ésta, marcamos esta tarjeta
-  // como destino del drop (insertar antes de mí). stopPropagation evita que la columna
-  // sobreescriba el destino con "final de columna".
   const dropTargetHandlers = isAdmin ? {
     onDragOver: (e) => {
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = 'move';
-      if (!isDragging) onHoverAsDropTarget(scene.id);
+      e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+      if (!isDragging) onHoverAsDropTarget(dragId);
     },
   } : {};
   const showDropLine = isDropTarget && !isDragging;
@@ -517,7 +565,7 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin,
       className={'scene-card group relative '
         + (draggable ? 'is-draggable ' : '')
         + (isDragging ? 'is-dragging ' : '')
-        + (showDropLine ? 'is-drop-target' : '')}
+        + (showDropLine ? (dropConflict ? 'is-drop-conflict' : 'is-drop-target') : '')}
       style={{ borderLeftColor: isRehearsed ? 'var(--rehearsed)' : 'var(--accent)' }}
     >
       <div style={{ padding: '8px 10px' }}>
@@ -533,6 +581,14 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin,
               fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em',
               flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{scene.acto || 'sin acto'}</span>
+          {multiSession && (
+            <span className="text-muted" title={`Esta escena se planificó ${multiSession} veces`}
+              style={{
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                padding: '1px 5px', borderRadius: 8,
+                background: 'rgba(107,31,35,0.10)', color: 'var(--accent)',
+              }}>×{multiSession}</span>
+          )}
           {scene.duracion && (
             <span className="text-ink-soft" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 2 }}>
               <IconClock size={9} />{scene.duracion.slice(0, 5)}
@@ -545,7 +601,7 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin,
         <CharacterRow personajes={scene.personajes} />
         {isRehearsed && (
           <div className="text-rehearsed" style={{ marginTop: 6, fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <IconCheck size={11} /> Ensayada {formatDateShort(scene.ensayado)}
+            <IconCheck size={11} /> Ensayada {formatDateShort(sesion.ensayado)}
           </div>
         )}
       </div>
@@ -554,16 +610,15 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin,
 }
 
 function DateColumn({
-  dateKey, label, sublabel, scenes, onColumnDragOver, onColumnDragLeave, onColumnDrop,
+  dateKey, label, sublabel, cards, onColumnDragOver, onColumnDragLeave, onColumnDrop,
   dropBeforeId, onCardHover, onEdit, totalSec,
-  isOver, accent, draggingId, onDragStart, onDragEnd, isNext, isAdmin,
+  isOver, accent, draggingSesionId, draggingSceneId, isCopying, onDragStart, onDragEnd,
+  isNext, isAdmin, hasConflict,
 }) {
   const dropHandlers = isAdmin ? {
     onDragOver: (e) => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      // Esto solo dispara cuando estamos sobre espacio vacío de la columna
-      // (las tarjetas tienen stopPropagation en su propio onDragOver).
+      e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
       onColumnDragOver(dateKey);
     },
     onDragLeave: (e) => {
@@ -574,11 +629,19 @@ function DateColumn({
     },
     onDrop: (e) => { e.preventDefault(); onColumnDrop(dateKey); },
   } : {};
-  const missingActors = useMemo(() => missingActorsForScenes(scenes), [scenes]);
-  const showActorStatus = dateKey !== '' && scenes.length > 0;
+  // Para los avisos de cobertura del reparto: una escena cuenta una sola vez, aunque tenga
+  // varias sesiones el mismo día (no deberían pero por las dudas).
+  const uniqueScenes = useMemo(() => {
+    const seen = new Set();
+    return cards.filter(c => seen.has(c.scene.id) ? false : (seen.add(c.scene.id), true)).map(c => c.scene);
+  }, [cards]);
+  const missingActors = useMemo(() => missingActorsForScenes(uniqueScenes), [uniqueScenes]);
+  const showActorStatus = dateKey !== '' && cards.length > 0;
   return (
     <div data-date-key={dateKey} {...dropHandlers}
-      className={'col-drop ' + (isOver ? 'is-over' : '') + (isNext ? ' is-next' : '')}
+      className={'col-drop '
+        + (isOver && hasConflict ? 'is-conflict ' : (isOver ? 'is-over ' : ''))
+        + (isNext ? ' is-next' : '')}
       style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column' }}
     >
       <div className="bg-paper-dim border-paper" style={{
@@ -588,7 +651,7 @@ function DateColumn({
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <h3 className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500, textTransform: 'capitalize' }}>{label}</h3>
-          <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>{scenes.length}</span>
+          <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>{cards.length}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
           <span className="text-muted" style={{ fontSize: 11 }}>{sublabel}</span>
@@ -623,21 +686,25 @@ function DateColumn({
         )}
       </div>
       <div style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 100 }}>
-        {scenes.length === 0 && (
+        {cards.length === 0 && (
           <div className="text-muted border-paper" style={{
             fontSize: 11, fontStyle: 'italic', textAlign: 'center',
             padding: '14px 8px', border: '1px dashed', borderRadius: 4,
           }}>
-            {isAdmin ? 'Soltá una escena acá' : 'Sin escenas'}
+            {isAdmin ? (isCopying ? 'Soltá para duplicar acá' : 'Soltá una escena acá') : 'Sin escenas'}
           </div>
         )}
-        {scenes.map(s => (
-          <SceneCard key={s.id} scene={s} onEdit={onEdit}
-            isDragging={draggingId === s.id}
+        {cards.map(({ scene, sesion, multiSession }) => (
+          <SceneCard key={sesion.id} scene={scene} sesion={sesion} onEdit={onEdit}
+            isDragging={draggingSesionId === sesion.id}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isAdmin={isAdmin}
-            isDropTarget={dropBeforeId === s.id}
-            onHoverAsDropTarget={(sceneId) => onCardHover(dateKey, sceneId)}
+            multiSession={multiSession > 1 ? multiSession : null}
+            isDropTarget={dropBeforeId === sesion.id}
+            // Si la escena que se está arrastrando ya tiene OTRA sesión en este día,
+            // marcamos el hover como conflicto.
+            dropConflict={hasConflict && draggingSceneId === scene.id && draggingSesionId !== sesion.id}
+            onHoverAsDropTarget={(sesionId) => onCardHover(dateKey, sesionId)}
           />
         ))}
       </div>
@@ -645,28 +712,65 @@ function DateColumn({
   );
 }
 
-function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDragEnd, isAdmin }) {
+function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, isCopying, onDragStart, onDragEnd, isAdmin }) {
   const [overKey, setOverKey] = useState(null);
   const [dropBeforeId, setDropBeforeId] = useState(null);
 
-  // Si el drag termina sin drop (Escape, soltar fuera) limpiamos el estado visual
   useEffect(() => {
-    if (draggingId === null) {
+    if (draggingSesionId === null) {
       setOverKey(null);
       setDropBeforeId(null);
     }
-  }, [draggingId]);
+  }, [draggingSesionId]);
 
+  // La sesión que se está arrastrando (para saber a qué escena pertenece)
+  const draggingCard = useMemo(() => {
+    if (!draggingSesionId) return null;
+    for (const s of scenes) {
+      const ses = (s.sesiones || []).find(x => x.id === draggingSesionId);
+      if (ses) return { scene: s, sesion: ses };
+    }
+    return null;
+  }, [draggingSesionId, scenes]);
+
+  // Conjunto de fechas donde la escena que se arrastra ya tiene OTRA sesión.
+  // En modo move, soltarla allí no tiene sentido (sería dejarla donde estaba si es la misma)
+  // o crearía duplicado en el mismo día (que pediste bloquear).
+  // En modo copy, sí cuenta como conflicto: no se puede duplicar al mismo día.
+  const conflictDateKeys = useMemo(() => {
+    if (!draggingCard) return new Set();
+    const keys = new Set();
+    (draggingCard.scene.sesiones || []).forEach(ses => {
+      if (isCopying) {
+        // copy: cualquier fecha donde la escena ya esté programada
+        keys.add(ses.planificado || '');
+      } else {
+        // move: solo bloquear fechas donde haya OTRA sesión distinta de la que arrastro
+        if (ses.id !== draggingSesionId) keys.add(ses.planificado || '');
+      }
+    });
+    return keys;
+  }, [draggingCard, draggingSesionId, isCopying]);
+
+  // Aplanamos: una entrada por sesión. Cada entrada también lleva multiSession (cuántas
+  // sesiones tiene esa escena en total) para mostrar el badge ×N en la tarjeta.
   const groups = useMemo(() => {
     const map = new Map();
     map.set('', []);
-    scenes.forEach(s => {
-      const k = s.planificado || '';
-      if (!map.has(k)) map.set(k, []);
-      map.get(k).push(s);
+    scenes.forEach(scene => {
+      const sesiones = scene.sesiones || [];
+      const total = sesiones.length;
+      if (sesiones.length === 0) {
+        // escena sin ninguna sesión → la mostramos como "Sin asignar"
+        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: '' }, multiSession: 0, isPhantom: true });
+        return;
+      }
+      sesiones.forEach(sesion => {
+        const k = sesion.planificado || '';
+        if (!map.has(k)) map.set(k, []);
+        map.get(k).push({ scene, sesion, multiSession: total });
+      });
     });
-    // No ordenamos por número: el orden dentro de cada columna es el orden del array
-    // (el admin lo modifica arrastrando entre tarjetas)
     const keys = Array.from(map.keys()).sort((a, b) => {
       if (a === '') return -1;
       if (b === '') return 1;
@@ -689,26 +793,33 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
     setOverKey(null);
     setDropBeforeId(null);
   }, []);
-  const handleCardHover = useCallback((dateKey, sceneId) => {
+  const handleCardHover = useCallback((dateKey, sesionId) => {
     setOverKey(dateKey);
-    setDropBeforeId(sceneId);
+    setDropBeforeId(sesionId);
   }, []);
   const handleColumnDrop = useCallback((dateKey) => {
-    onMoveScene(dateKey, dropBeforeId);
+    // Bloquear si hay conflicto
+    if (conflictDateKeys.has(dateKey)) {
+      setOverKey(null);
+      setDropBeforeId(null);
+      return;
+    }
+    onMoveSesion(dateKey, dropBeforeId, isCopying);
     setOverKey(null);
     setDropBeforeId(null);
-  }, [onMoveScene, dropBeforeId]);
+  }, [onMoveSesion, dropBeforeId, conflictDateKeys, isCopying]);
 
   return (
     <div data-board-scroll className="scrolly" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, paddingTop: 12, paddingRight: 16 }}>
       {groups.map(({ key, items }) => {
-        const totalSec = items.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0);
+        const totalSec = items.reduce((sum, c) => sum + parseDurationToSec(c.scene.duracion), 0);
         const label = key === '' ? 'Sin asignar' : formatDateLong(key);
         const sublabel = key === '' ? (isAdmin ? 'arrastrá escenas para programarlas' : 'sin programar') : formatDateShort(key);
         const accent = key === '' ? '#8a7d6b' : '#6b1f23';
+        const conflict = conflictDateKeys.has(key);
         return (
           <DateColumn key={key} dateKey={key} label={label} sublabel={sublabel}
-            scenes={items} totalSec={totalSec}
+            cards={items} totalSec={totalSec}
             onColumnDragOver={handleColumnDragOver}
             onColumnDragLeave={handleColumnDragLeave}
             onColumnDrop={handleColumnDrop}
@@ -716,9 +827,13 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
             onCardHover={handleCardHover}
             onEdit={onEdit}
             isOver={overKey === key}
-            accent={accent} draggingId={draggingId}
+            accent={accent}
+            draggingSesionId={draggingSesionId}
+            draggingSceneId={draggingCard ? draggingCard.scene.id : null}
+            isCopying={isCopying}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isNext={key === nextDateKey} isAdmin={isAdmin}
+            hasConflict={conflict}
           />
         );
       })}
@@ -726,16 +841,83 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
   );
 }
 
-function TableView({ scenes, onUpdate, onDelete, onEdit, isAdmin }) {
-  const sorted = useMemo(() => [...scenes].sort(sortByNumero), [scenes]);
+function TableView({ scenes, onUpdate, onUpdateSesion, onDeleteSesion, onAddSesion, onDelete, onEdit, isAdmin }) {
+  // Aplanamos: una fila por sesión. Las escenas sin sesiones también aparecen con
+  // una fila "fantasma" para que no desaparezcan de la tabla.
+  const rows = useMemo(() => {
+    const out = [];
+    scenes.forEach(scene => {
+      const sesiones = scene.sesiones || [];
+      if (sesiones.length === 0) {
+        out.push({ scene, sesion: null, isPhantom: true });
+      } else {
+        sesiones.forEach(sesion => out.push({ scene, sesion, isPhantom: false }));
+      }
+    });
+    return out;
+  }, [scenes]);
+
+  // Ordenamiento: la primera vez click ordena asc, segunda click misma col → desc, tercera → sin orden
+  // Por defecto: orden de aparición (sin orden explícito)
+  const [sortBy, setSortBy] = useState(null); // 'numero' | 'acto' | 'nombre' | 'duracion' | 'planificado' | 'ensayado'
+  const [sortDir, setSortDir] = useState('asc'); // 'asc' | 'desc'
+
+  const sortedRows = useMemo(() => {
+    if (!sortBy) return rows;
+    const cmp = (a, b) => {
+      let va, vb;
+      if (sortBy === 'numero') {
+        va = parseInt(a.scene.numero, 10);
+        vb = parseInt(b.scene.numero, 10);
+        if (isNaN(va)) va = Infinity; if (isNaN(vb)) vb = Infinity;
+        if (va !== vb) return va - vb;
+        return String(a.scene.numero).localeCompare(String(b.scene.numero));
+      }
+      if (sortBy === 'duracion') {
+        va = parseDurationToSec(a.scene.duracion);
+        vb = parseDurationToSec(b.scene.duracion);
+        return va - vb;
+      }
+      if (sortBy === 'planificado' || sortBy === 'ensayado') {
+        va = a.sesion ? (a.sesion[sortBy] || '') : '';
+        vb = b.sesion ? (b.sesion[sortBy] || '') : '';
+        // Vacíos al final
+        if (!va && !vb) return 0;
+        if (!va) return 1;
+        if (!vb) return -1;
+        return va.localeCompare(vb);
+      }
+      // strings: acto, nombre
+      va = String(a.scene[sortBy] || '').toLowerCase();
+      vb = String(b.scene[sortBy] || '').toLowerCase();
+      return va.localeCompare(vb);
+    };
+    const sorted = [...rows].sort(cmp);
+    return sortDir === 'desc' ? sorted.reverse() : sorted;
+  }, [rows, sortBy, sortDir]);
+
+  const onHeaderClick = (col) => {
+    if (sortBy !== col) { setSortBy(col); setSortDir('asc'); return; }
+    if (sortDir === 'asc') { setSortDir('desc'); return; }
+    setSortBy(null); setSortDir('asc');
+  };
+  const sortIndicator = (col) => {
+    if (sortBy !== col) return null;
+    return <span style={{ marginLeft: 4, fontSize: 10 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>;
+  };
+
   return (
     <div className="bg-paper border-paper scrolly" style={{ overflow: 'auto', maxHeight: '70vh', borderRadius: 8, border: '1px solid' }}>
       <table style={{ fontSize: 12, width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
         <thead className="bg-paper-dim" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
-            <Th>N°</Th><Th>Acto</Th><Th style={{ minWidth: 180 }}>Escena</Th>
+            <ThSort onClick={() => onHeaderClick('numero')}>N°{sortIndicator('numero')}</ThSort>
+            <ThSort onClick={() => onHeaderClick('acto')}>Acto{sortIndicator('acto')}</ThSort>
+            <ThSort onClick={() => onHeaderClick('nombre')} style={{ minWidth: 180 }}>Escena{sortIndicator('nombre')}</ThSort>
             <Th colSpan={CHARACTERS.length} center>Personajes</Th>
-            <Th>Duración</Th><Th>Planificado</Th><Th>Ensayado</Th>
+            <ThSort onClick={() => onHeaderClick('duracion')}>Duración{sortIndicator('duracion')}</ThSort>
+            <ThSort onClick={() => onHeaderClick('planificado')}>Planificado{sortIndicator('planificado')}</ThSort>
+            <ThSort onClick={() => onHeaderClick('ensayado')}>Ensayado{sortIndicator('ensayado')}</ThSort>
             {isAdmin && <Th />}
           </tr>
           <tr>
@@ -754,79 +936,112 @@ function TableView({ scenes, onUpdate, onDelete, onEdit, isAdmin }) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((s, idx) => (
-            <tr key={s.id} style={{ background: idx % 2 === 0 ? 'var(--paper)' : 'rgba(235,226,207,0.4)' }}>
-              <Td>
-                {isAdmin
-                  ? <input className="cell-input" value={s.numero} onChange={e => onUpdate(s.id, { numero: e.target.value })} style={{ width: 48, fontVariantNumeric: 'tabular-nums' }}/>
-                  : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.numero || '—'}</span>}
-              </Td>
-              <Td>
-                {isAdmin
-                  ? <input className="cell-input" value={s.acto} onChange={e => onUpdate(s.id, { acto: e.target.value })} style={{ width: 110 }}/>
-                  : <span style={{ padding: '4px 6px', fontSize: 12 }}>{s.acto}</span>}
-              </Td>
-              <Td>
-                {isAdmin
-                  ? <input className="cell-input font-display" value={s.nombre} onChange={e => onUpdate(s.id, { nombre: e.target.value })} style={{ width: '100%', minWidth: 180 }}/>
-                  : <span className="font-display" style={{ padding: '4px 6px', fontSize: 13 }}>{s.nombre}</span>}
-              </Td>
-              {CHARACTERS.map(c => {
-                const present = s.personajes.includes(c);
-                const grp = CHAR_GROUP_INFO[c];
-                return (
-                  <td key={c} className="border-paper" style={{
-                    borderBottom: '1px solid', textAlign: 'center', padding: 0,
-                    borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
-                  }}>
-                    {isAdmin ? (
-                      <button onClick={() => {
-                        const next = present ? s.personajes.filter(x => x !== c) : [...s.personajes, c];
-                        onUpdate(s.id, { personajes: next });
-                      }} style={{
-                        width: '100%', minWidth: 28, height: 28, border: 0,
-                        background: present ? CHAR_COLORS[c] : 'transparent',
-                        cursor: 'pointer',
-                      }} title={present ? `Quitar ${c}` : `Agregar ${c} — ${charTooltip(c)}`}/>
-                    ) : (
-                      <div style={{
-                        width: '100%', minWidth: 28, height: 28,
-                        background: present ? CHAR_COLORS[c] : 'transparent',
-                      }}/>
-                    )}
-                  </td>
-                );
-              })}
-              <Td>
-                {isAdmin
-                  ? <input className="cell-input" value={s.duracion} onChange={e => onUpdate(s.id, { duracion: e.target.value })} placeholder="00:00:00" style={{ width: 78, fontVariantNumeric: 'tabular-nums' }}/>
-                  : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.duracion || '—'}</span>}
-              </Td>
-              <Td>
-                {isAdmin
-                  ? <input type="date" className="cell-input" value={s.planificado} onChange={e => onUpdate(s.id, { planificado: e.target.value })} style={{ fontVariantNumeric: 'tabular-nums' }}/>
-                  : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.planificado ? formatDateShort(s.planificado) : '—'}</span>}
-              </Td>
-              <Td>
-                {isAdmin
-                  ? <input type="date" className="cell-input" value={s.ensayado} onChange={e => onUpdate(s.id, { ensayado: e.target.value })} style={{ fontVariantNumeric: 'tabular-nums' }}/>
-                  : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: s.ensayado ? 'var(--rehearsed)' : 'var(--muted)' }}>{s.ensayado ? formatDateShort(s.ensayado) : '—'}</span>}
-              </Td>
-              {isAdmin && (
+          {sortedRows.map(({ scene: s, sesion, isPhantom }, idx) => {
+            const rowKey = sesion ? `${s.id}_${sesion.id}` : `${s.id}_phantom`;
+            return (
+              <tr key={rowKey} style={{ background: idx % 2 === 0 ? 'var(--paper)' : 'rgba(235,226,207,0.4)' }}>
                 <Td>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => onEdit(s)} className="btn-icon" title="Editar en detalle"><IconEdit size={12}/></button>
-                    <button onClick={() => {
-                      if (confirm(`¿Eliminar "${s.nombre || 'esta escena'}"?`)) onDelete(s.id);
-                    }} className="btn-icon" title="Eliminar"><IconTrash size={12}/></button>
-                  </div>
+                  {isAdmin
+                    ? <input className="cell-input" value={s.numero} onChange={e => onUpdate(s.id, { numero: e.target.value })} style={{ width: 48, fontVariantNumeric: 'tabular-nums' }}/>
+                    : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.numero || '—'}</span>}
                 </Td>
-              )}
-            </tr>
-          ))}
+                <Td>
+                  {isAdmin
+                    ? <input className="cell-input" value={s.acto} onChange={e => onUpdate(s.id, { acto: e.target.value })} style={{ width: 110 }}/>
+                    : <span style={{ padding: '4px 6px', fontSize: 12 }}>{s.acto}</span>}
+                </Td>
+                <Td>
+                  {isAdmin
+                    ? <input className="cell-input font-display" value={s.nombre} onChange={e => onUpdate(s.id, { nombre: e.target.value })} style={{ width: '100%', minWidth: 180 }}/>
+                    : <span className="font-display" style={{ padding: '4px 6px', fontSize: 13 }}>{s.nombre}</span>}
+                </Td>
+                {CHARACTERS.map(c => {
+                  const present = s.personajes.includes(c);
+                  const grp = CHAR_GROUP_INFO[c];
+                  return (
+                    <td key={c} className="border-paper" style={{
+                      borderBottom: '1px solid', textAlign: 'center', padding: 0,
+                      borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
+                    }}>
+                      {isAdmin ? (
+                        <button onClick={() => {
+                          const next = present ? s.personajes.filter(x => x !== c) : [...s.personajes, c];
+                          onUpdate(s.id, { personajes: next });
+                        }} style={{
+                          width: '100%', minWidth: 28, height: 28, border: 0,
+                          background: present ? CHAR_COLORS[c] : 'transparent',
+                          cursor: 'pointer',
+                        }} title={present ? `Quitar ${c}` : `Agregar ${c} — ${charTooltip(c)}`}/>
+                      ) : (
+                        <div style={{
+                          width: '100%', minWidth: 28, height: 28,
+                          background: present ? CHAR_COLORS[c] : 'transparent',
+                        }}/>
+                      )}
+                    </td>
+                  );
+                })}
+                <Td>
+                  {isAdmin
+                    ? <input className="cell-input" value={s.duracion} onChange={e => onUpdate(s.id, { duracion: e.target.value })} placeholder="00:00:00" style={{ width: 78, fontVariantNumeric: 'tabular-nums' }}/>
+                    : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{s.duracion || '—'}</span>}
+                </Td>
+                <Td>
+                  {isPhantom
+                    ? <span className="text-muted" style={{ padding: '4px 6px', fontSize: 11, fontStyle: 'italic' }}>sin sesión</span>
+                    : isAdmin
+                      ? <input type="date" className="cell-input" value={sesion.planificado}
+                          onChange={e => onUpdateSesion(s.id, sesion.id, { planificado: e.target.value })}
+                          style={{ fontVariantNumeric: 'tabular-nums' }}/>
+                      : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{sesion.planificado ? formatDateShort(sesion.planificado) : '—'}</span>}
+                </Td>
+                <Td>
+                  {isPhantom
+                    ? <span className="text-muted" style={{ padding: '4px 6px', fontSize: 11 }}>—</span>
+                    : isAdmin
+                      ? <input type="date" className="cell-input" value={sesion.ensayado}
+                          onChange={e => onUpdateSesion(s.id, sesion.id, { ensayado: e.target.value })}
+                          style={{ fontVariantNumeric: 'tabular-nums' }}/>
+                      : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: sesion.ensayado ? 'var(--rehearsed)' : 'var(--muted)' }}>{sesion.ensayado ? formatDateShort(sesion.ensayado) : '—'}</span>}
+                </Td>
+                {isAdmin && (
+                  <Td>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button onClick={() => onEdit(s)} className="btn-icon" title="Editar escena en detalle"><IconEdit size={12}/></button>
+                      {!isPhantom && (
+                        <button onClick={() => {
+                          if (confirm(`¿Eliminar esta sesión de "${s.nombre}" del ${sesion.planificado ? formatDateShort(sesion.planificado) : 'sin fecha'}?`)) {
+                            onDeleteSesion(s.id, sesion.id);
+                          }
+                        }} className="btn-icon" title="Eliminar esta sesión"><IconTrash size={12}/></button>
+                      )}
+                      {isPhantom && (
+                        <button onClick={() => onAddSesion(s.id)}
+                          className="btn-icon" title="Agregar sesión"><IconPlus size={12}/></button>
+                      )}
+                    </div>
+                  </Td>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function ThSort({ children, onClick, style }) {
+  return (
+    <th onClick={onClick}
+      className="font-display text-ink-soft border-paper"
+      style={{
+        textAlign: 'left',
+        fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em',
+        padding: '8px 8px', borderBottom: '1px solid',
+        cursor: 'pointer', userSelect: 'none',
+        ...(style || {}),
+      }}>{children}</th>
   );
 }
 
@@ -921,23 +1136,67 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
           <Field label="Nombre de la escena">
             <ModalInputOrText ro={ro} value={draft.nombre} onChange={e => setDraft({ ...draft, nombre: e.target.value })} style={{ fontSize: 15, fontFamily: "'Fraunces', Georgia, serif" }}/>
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1,1fr)', gap: 12 }}>
             <Field label="Duración (HH:MM:SS)">
               {ro
-                ? <div className="modal-input" style={{ minHeight: 32, fontVariantNumeric: 'tabular-nums' }}>{draft.duracion || '—'}</div>
-                : <input className="modal-input" style={{ width: '100%', fontVariantNumeric: 'tabular-nums' }} value={draft.duracion} onChange={e => setDraft({ ...draft, duracion: e.target.value })} placeholder="00:05:00"/>}
-            </Field>
-            <Field label="Planificado">
-              {ro
-                ? <div className="modal-input" style={{ minHeight: 32 }}>{draft.planificado ? formatDateShort(draft.planificado) : '—'}</div>
-                : <input type="date" className="modal-input" style={{ width: '100%' }} value={draft.planificado} onChange={e => setDraft({ ...draft, planificado: e.target.value })}/>}
-            </Field>
-            <Field label="Ensayado">
-              {ro
-                ? <div className="modal-input" style={{ minHeight: 32, color: draft.ensayado ? 'var(--rehearsed)' : undefined }}>{draft.ensayado ? formatDateShort(draft.ensayado) : '—'}</div>
-                : <input type="date" className="modal-input" style={{ width: '100%' }} value={draft.ensayado} onChange={e => setDraft({ ...draft, ensayado: e.target.value })}/>}
+                ? <div className="modal-input" style={{ minHeight: 32, fontVariantNumeric: 'tabular-nums', maxWidth: 180 }}>{draft.duracion || '—'}</div>
+                : <input className="modal-input" style={{ width: 180, fontVariantNumeric: 'tabular-nums' }} value={draft.duracion} onChange={e => setDraft({ ...draft, duracion: e.target.value })} placeholder="00:05:00"/>}
             </Field>
           </div>
+          <Field label={`Sesiones de ensayo${(draft.sesiones || []).length > 0 ? ` (${(draft.sesiones || []).length})` : ''}`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              {(draft.sesiones || []).length === 0 && (
+                <div className="text-muted" style={{ fontSize: 12, fontStyle: 'italic', padding: '4px 0' }}>
+                  Esta escena todavía no tiene sesiones programadas.
+                </div>
+              )}
+              {(draft.sesiones || []).map((ses, idx) => (
+                <div key={ses.id} className="bg-paper-soft border-paper" style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 8px', border: '1px solid', borderRadius: 4,
+                }}>
+                  <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', width: 16, textAlign: 'right' }}>{idx + 1}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                    <span className="text-muted" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Planificado</span>
+                    {ro
+                      ? <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{ses.planificado ? formatDateShort(ses.planificado) : '—'}</span>
+                      : <input type="date" className="modal-input" value={ses.planificado}
+                          onChange={e => setDraft(d => ({
+                            ...d,
+                            sesiones: d.sesiones.map(x => x.id === ses.id ? { ...x, planificado: e.target.value } : x),
+                          }))}
+                          style={{ padding: '3px 6px', fontSize: 12 }}/>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+                    <span className="text-muted" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ensayado</span>
+                    {ro
+                      ? <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: ses.ensayado ? 'var(--rehearsed)' : undefined }}>{ses.ensayado ? formatDateShort(ses.ensayado) : '—'}</span>
+                      : <input type="date" className="modal-input" value={ses.ensayado}
+                          onChange={e => setDraft(d => ({
+                            ...d,
+                            sesiones: d.sesiones.map(x => x.id === ses.id ? { ...x, ensayado: e.target.value } : x),
+                          }))}
+                          style={{ padding: '3px 6px', fontSize: 12 }}/>}
+                  </div>
+                  {!ro && (
+                    <button className="btn-icon" title="Eliminar esta sesión"
+                      onClick={() => setDraft(d => ({ ...d, sesiones: d.sesiones.filter(x => x.id !== ses.id) }))}>
+                      <IconTrash size={12}/>
+                    </button>
+                  )}
+                </div>
+              ))}
+              {!ro && (
+                <button onClick={() => setDraft(d => ({
+                  ...d,
+                  sesiones: [...(d.sesiones || []), { id: newSesionId(), planificado: '', ensayado: '' }],
+                }))}
+                  className="btn-secondary" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+                  <IconPlus size={11}/> Agregar sesión
+                </button>
+              )}
+            </div>
+          </Field>
           <Field label="Personajes presentes">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
               {ACTORS.map(actor => (
@@ -1005,15 +1264,27 @@ function ProgressBar({ scenes, onEdit }) {
 
   const nextDateKey = useMemo(() => {
     const t = todayISO();
-    const future = scenes.map(s => s.planificado).filter(d => d && d >= t).sort();
+    const future = [];
+    scenes.forEach(s => (s.sesiones || []).forEach(ses => {
+      if (ses.planificado && ses.planificado >= t) future.push(ses.planificado);
+    }));
+    future.sort();
     return future[0] || null;
   }, [scenes]);
 
+  const sceneState = useCallback(s => {
+    const sesiones = s.sesiones || [];
+    const ensayadaAlMenosUnaVez = sesiones.some(ses => ses.ensayado);
+    const enProximo = nextDateKey && sesiones.some(ses => ses.planificado === nextDateKey && !ses.ensayado);
+    return { ensayadaAlMenosUnaVez, enProximo };
+  }, [nextDateKey]);
+
   const total = sorted.length;
-  const rehearsed = sorted.filter(s => s.ensayado).length;
-  const upcoming = nextDateKey
-    ? sorted.filter(s => s.planificado === nextDateKey && !s.ensayado).length
-    : 0;
+  const rehearsed = sorted.filter(s => sceneState(s).ensayadaAlMenosUnaVez).length;
+  const upcoming = sorted.filter(s => {
+    const st = sceneState(s);
+    return st.enProximo && !st.ensayadaAlMenosUnaVez;
+  }).length;
   const pct = total === 0 ? 0 : Math.round((rehearsed / total) * 100);
   if (total === 0) return null;
   return (
@@ -1036,15 +1307,22 @@ function ProgressBar({ scenes, onEdit }) {
       </div>
       <div style={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
         {sorted.map(s => {
-          const done = !!s.ensayado;
-          const isUpcoming = !done && nextDateKey && s.planificado === nextDateKey;
-          const fillColor = done ? 'var(--rehearsed)' : (isUpcoming ? 'var(--accent)' : 'var(--paper)');
-          const borderColor = done ? 'var(--rehearsed)' : (isUpcoming ? 'var(--accent)' : 'var(--border)');
+          const { ensayadaAlMenosUnaVez, enProximo } = sceneState(s);
+          // ensayada gana sobre próxima si una sesión ya fue ensayada
+          const fillColor = ensayadaAlMenosUnaVez ? 'var(--rehearsed)'
+            : (enProximo ? 'var(--accent)' : 'var(--paper)');
+          const borderColor = ensayadaAlMenosUnaVez ? 'var(--rehearsed)'
+            : (enProximo ? 'var(--accent)' : 'var(--border)');
           const titleParts = [`#${s.numero || '—'} ${s.nombre || 'sin título'}`];
-          if (done) titleParts.push(`ensayada ${formatDateShort(s.ensayado)}`);
-          else if (isUpcoming) titleParts.push(`próximo ensayo: ${formatDateShort(s.planificado)}`);
-          else if (s.planificado) titleParts.push(`planificada ${formatDateShort(s.planificado)}`);
-          else titleParts.push('sin programar');
+          const sesiones = s.sesiones || [];
+          const ensayadasFechas = sesiones.filter(x => x.ensayado).map(x => formatDateShort(x.ensayado));
+          if (ensayadasFechas.length > 0) titleParts.push(`ensayada: ${ensayadasFechas.join(', ')}`);
+          if (enProximo) titleParts.push(`próximo ensayo: ${formatDateShort(nextDateKey)}`);
+          if (sesiones.length === 0) titleParts.push('sin programar');
+          else if (!ensayadaAlMenosUnaVez && !enProximo) {
+            const futuras = sesiones.map(x => x.planificado).filter(Boolean);
+            if (futuras.length) titleParts.push(`planificada: ${futuras.map(formatDateShort).join(', ')}`);
+          }
           return (
             <button key={s.id} onClick={() => onEdit(s)} title={titleParts.join(' · ')}
               style={{
@@ -1096,18 +1374,31 @@ async function exportToXLSX(scenes) {
   const XLSX = await loadXLSX();
   const headerRow1 = ['', '', '', 'Personajes', ...Array(CHARACTERS.length - 1).fill(''), '', '', ''];
   const headerRow2 = ['Acto', 'Escena', 'Número', ...CHARACTERS, 'Duración', 'Planificado', 'Ensayado'];
-  const sorted = [...scenes].sort((a, b) => {
+  // Aplanamos a sesiones. Escenas sin sesiones aparecen una vez con fechas vacías.
+  const flatRows = [];
+  scenes.forEach(s => {
+    const sesiones = s.sesiones || [];
+    if (sesiones.length === 0) {
+      flatRows.push({ scene: s, planificado: '', ensayado: '' });
+    } else {
+      sesiones.forEach(ses => flatRows.push({
+        scene: s, planificado: ses.planificado || '', ensayado: ses.ensayado || '',
+      }));
+    }
+  });
+  // Orden: por fecha planificada asc, luego por número de escena
+  flatRows.sort((a, b) => {
     const pa = a.planificado || '9999-99-99';
     const pb = b.planificado || '9999-99-99';
     if (pa !== pb) return pa.localeCompare(pb);
-    return sortByNumero(a, b);
+    return sortByNumero(a.scene, b.scene);
   });
-  const dataRows = sorted.map(s => [
+  const dataRows = flatRows.map(({ scene: s, planificado, ensayado }) => [
     s.acto, s.nombre, s.numero,
     ...CHARACTERS.map(c => s.personajes.includes(c) ? '●' : ''),
     s.duracion,
-    s.planificado ? formatDateShort(s.planificado) : '',
-    s.ensayado ? formatDateShort(s.ensayado) : '',
+    planificado ? formatDateShort(planificado) : '',
+    ensayado ? formatDateShort(ensayado) : '',
   ]);
   const aoa = [headerRow1, headerRow2, ...dataRows];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1121,10 +1412,10 @@ async function exportToXLSX(scenes) {
   XLSX.utils.book_append_sheet(wb, ws, 'Tablero');
 
   const byDay = new Map();
-  sorted.forEach(s => {
-    const k = s.planificado || 'Sin asignar';
+  flatRows.forEach(({ scene, planificado }) => {
+    const k = planificado || 'Sin asignar';
     if (!byDay.has(k)) byDay.set(k, []);
-    byDay.get(k).push(s);
+    byDay.get(k).push(scene);
   });
   const summaryRows = [['Fecha', 'Día', 'Escenas', 'Duración total', 'Personajes involucrados']];
   Array.from(byDay.entries())
@@ -1134,13 +1425,16 @@ async function exportToXLSX(scenes) {
       return a[0].localeCompare(b[0]);
     })
     .forEach(([k, items]) => {
-      const totalSec = items.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0);
-      const personajesInvolucrados = Array.from(new Set(items.flatMap(s => s.personajes)))
+      // dedupe escenas dentro del mismo día (por las dudas)
+      const seen = new Set();
+      const uniqueItems = items.filter(s => seen.has(s.id) ? false : (seen.add(s.id), true));
+      const totalSec = uniqueItems.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0);
+      const personajesInvolucrados = Array.from(new Set(uniqueItems.flatMap(s => s.personajes)))
         .sort((a, b) => CHARACTERS.indexOf(a) - CHARACTERS.indexOf(b));
       summaryRows.push([
         k === 'Sin asignar' ? '' : formatDateShort(k),
         k === 'Sin asignar' ? 'Sin asignar' : formatDateLong(k),
-        items.length,
+        uniqueItems.length,
         totalSec > 0 ? formatSecToDuration(totalSec) : '',
         personajesInvolucrados.join(', '),
       ]);
@@ -1295,7 +1589,8 @@ function App({ repo }) {
   const [isNewScene, setIsNewScene] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const [draggingId, setDraggingId] = useState(null);
+  const [draggingSesionId, setDraggingSesionId] = useState(null);
+  const [isCopying, setIsCopying] = useState(false);
   const [query, setQuery] = useState('');
 
   const [token, setToken] = useState(null);
@@ -1406,7 +1701,11 @@ function App({ repo }) {
   useEffect(() => {
     if (!loaded || view !== 'board' || initialScrollDone.current) return;
     const t = todayISO();
-    const futureDates = scenes.map(s => s.planificado).filter(d => d && d >= t).sort();
+    const futureDates = [];
+    scenes.forEach(s => (s.sesiones || []).forEach(ses => {
+      if (ses.planificado && ses.planificado >= t) futureDates.push(ses.planificado);
+    }));
+    futureDates.sort();
     const targetDate = futureDates[0];
     if (!targetDate) { initialScrollDone.current = true; return; }
     const tm = setTimeout(() => {
@@ -1437,8 +1736,8 @@ function App({ repo }) {
     const totalSec = scenes.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0);
     return {
       total: scenes.length,
-      planned: scenes.filter(s => s.planificado).length,
-      rehearsed: scenes.filter(s => s.ensayado).length,
+      planned: scenes.filter(s => (s.sesiones || []).some(x => x.planificado)).length,
+      rehearsed: scenes.filter(s => (s.sesiones || []).some(x => x.ensayado)).length,
       totalSec,
     };
   }, [scenes]);
@@ -1461,34 +1760,81 @@ function App({ repo }) {
   }, []);
   const handleAdd = useCallback(() => {
     setIsNewScene(true);
-    setEditing({ id: newId(), acto: '', nombre: '', numero: '', duracion: '', planificado: '', ensayado: '', personajes: [] });
+    setEditing({ id: newId(), acto: '', nombre: '', numero: '', duracion: '', sesiones: [], personajes: [] });
   }, []);
-  const handleMoveScene = useCallback((targetDateKey, beforeSceneId = null) => {
-    if (!draggingId) return;
-    // Soltar sobre uno mismo: no-op
-    if (beforeSceneId === draggingId) { setDraggingId(null); return; }
+
+  // Handlers de sesiones individuales (usados por TableView)
+  const handleUpdateSesion = useCallback((sceneId, sesionId, patch) => {
+    setScenes(prev => prev.map(s => {
+      if (s.id !== sceneId) return s;
+      return { ...s, sesiones: (s.sesiones || []).map(x => x.id === sesionId ? { ...x, ...patch } : x) };
+    }));
+  }, []);
+  const handleDeleteSesion = useCallback((sceneId, sesionId) => {
+    setScenes(prev => prev.map(s => {
+      if (s.id !== sceneId) return s;
+      return { ...s, sesiones: (s.sesiones || []).filter(x => x.id !== sesionId) };
+    }));
+  }, []);
+  const handleAddSesion = useCallback((sceneId) => {
+    setScenes(prev => prev.map(s => {
+      if (s.id !== sceneId) return s;
+      return { ...s, sesiones: [...(s.sesiones || []), { id: newSesionId(), planificado: '', ensayado: '' }] };
+    }));
+  }, []);
+
+  // Drag & drop en el tablero. Soporta mover y duplicar (alt-drag).
+  // beforeSesionId: null = al final del grupo; sino = insertar antes de esa sesión
+  // copy: true = duplicar; false = mover
+  const handleMoveSesion = useCallback((targetDateKey, beforeSesionId = null, copy = false) => {
+    if (!draggingSesionId) return;
+    // Soltar sobre sí misma: no-op (move) o sí permitido (copy)
+    if (!copy && beforeSesionId === draggingSesionId) { setDraggingSesionId(null); setIsCopying(false); return; }
+
     setScenes(prev => {
-      const dragged = prev.find(s => s.id === draggingId);
-      if (!dragged) return prev;
-      const without = prev.filter(s => s.id !== draggingId);
-      const updated = { ...dragged, planificado: targetDateKey || '' };
-      // Caso 1: drop sobre una tarjeta específica → insertar justo antes
-      if (beforeSceneId) {
-        const idx = without.findIndex(s => s.id === beforeSceneId);
-        if (idx === -1) return [...without, updated];
-        return [...without.slice(0, idx), updated, ...without.slice(idx)];
+      // Encontramos la escena y la sesión que se arrastra
+      let sourceScene = null;
+      let sourceSesion = null;
+      for (const s of prev) {
+        const found = (s.sesiones || []).find(x => x.id === draggingSesionId);
+        if (found) { sourceScene = s; sourceSesion = found; break; }
       }
-      // Caso 2: drop sobre espacio vacío de la columna → al final de su grupo
+      if (!sourceScene || !sourceSesion) return prev;
+
+      // Validar conflicto: si la escena ya tiene una sesión en esa fecha que no es la misma
+      // que arrastramos (en copy también si es la misma), bloquear.
+      const existingInDate = (sourceScene.sesiones || []).filter(x =>
+        (x.planificado || '') === (targetDateKey || '') &&
+        (copy ? true : x.id !== draggingSesionId)
+      );
+      if (existingInDate.length > 0) return prev;
+
       const targetKey = targetDateKey || '';
-      let lastIdx = -1;
-      without.forEach((s, i) => {
-        if ((s.planificado || '') === targetKey) lastIdx = i;
+      const newSesion = copy
+        ? { id: newSesionId(), planificado: targetKey, ensayado: '' }
+        : { ...sourceSesion, planificado: targetKey };
+
+      return prev.map(s => {
+        if (s.id !== sourceScene.id) return s;
+        let arr = s.sesiones || [];
+        // En modo move, sacamos la sesión original (la vamos a reinsertar)
+        if (!copy) arr = arr.filter(x => x.id !== draggingSesionId);
+
+        if (beforeSesionId) {
+          const idx = arr.findIndex(x => x.id === beforeSesionId);
+          if (idx === -1) return { ...s, sesiones: [...arr, newSesion] };
+          return { ...s, sesiones: [...arr.slice(0, idx), newSesion, ...arr.slice(idx)] };
+        }
+        // sin beforeSesionId: al final del grupo de esa fecha
+        let lastIdx = -1;
+        arr.forEach((x, i) => { if ((x.planificado || '') === targetKey) lastIdx = i; });
+        if (lastIdx === -1) return { ...s, sesiones: [...arr, newSesion] };
+        return { ...s, sesiones: [...arr.slice(0, lastIdx + 1), newSesion, ...arr.slice(lastIdx + 1)] };
       });
-      if (lastIdx === -1) return [...without, updated]; // grupo vacío: al final del array
-      return [...without.slice(0, lastIdx + 1), updated, ...without.slice(lastIdx + 1)];
     });
-    setDraggingId(null);
-  }, [draggingId]);
+    setDraggingSesionId(null);
+    setIsCopying(false);
+  }, [draggingSesionId]);
   const handleReset = useCallback(() => {
     if (confirm('¿Restaurar la lista original de escenas? Se perderán los cambios actuales (hasta que guardes).')) {
       setScenes(INITIAL_SCENES);
@@ -1655,14 +2001,19 @@ function App({ repo }) {
         {view === 'board' ? (
           <BoardView scenes={filteredScenes}
             onEdit={(s) => { setIsNewScene(false); setEditing(s); }}
-            onMoveScene={handleMoveScene}
-            draggingId={draggingId}
-            onDragStart={setDraggingId}
-            onDragEnd={() => setDraggingId(null)}
+            onMoveSesion={handleMoveSesion}
+            draggingSesionId={draggingSesionId}
+            isCopying={isCopying}
+            onDragStart={(sesionId, copy) => { setDraggingSesionId(sesionId); setIsCopying(!!copy); }}
+            onDragEnd={() => { setDraggingSesionId(null); setIsCopying(false); }}
             isAdmin={isAdmin}/>
         ) : (
           <TableView scenes={filteredScenes}
-            onUpdate={handleUpdate} onDelete={handleDelete}
+            onUpdate={handleUpdate}
+            onUpdateSesion={handleUpdateSesion}
+            onDeleteSesion={handleDeleteSesion}
+            onAddSesion={handleAddSesion}
+            onDelete={handleDelete}
             onEdit={(s) => { setIsNewScene(false); setEditing(s); }}
             isAdmin={isAdmin}/>
         )}
