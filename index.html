@@ -163,7 +163,7 @@
 const REPO_OVERRIDE = {
   user: '',     // ej: 'tuusuario'
   repo: '',     // ej: 'cronograma-ensayos'
-  branch: 'main'
+  branch: ''
 };
 
 const DATA_FILE = 'data.json';
@@ -203,8 +203,29 @@ function missingActorsForScenes(scenes) {
   return ACTORS.filter(a => !a.characters.some(c => allChars.has(c)));
 }
 
+// Mapa rápido: char → info de su agrupación de actor (para el render con chips pegados)
+const CHAR_GROUP_INFO = {};
+ACTORS.forEach(a => {
+  a.characters.forEach((c, i) => {
+    CHAR_GROUP_INFO[c] = {
+      actor: a,
+      isFirstInGroup: i === 0,
+      isLastInGroup: i === a.characters.length - 1,
+      isPaired: a.characters.length > 1,
+    };
+  });
+});
+
+// Tooltip uniforme para chips de personaje (incluye info de actor compartido)
+function charTooltip(c) {
+  const grp = CHAR_GROUP_INFO[c];
+  if (!grp || !grp.isPaired) return c;
+  const otros = grp.actor.characters.filter(x => x !== c);
+  return `${c} — mismo actor que ${otros.join(', ')}`;
+}
+
 const INITIAL_SCENES = [
-  { id: 's1',  acto: 'Prólogo',        nombre: 'Un gusto, Ariel',           numero: '1',  duracion: '00:04:00', planificado: '',           ensayado: '',           personajes: ['Ari', 'Car'] },
+  { id: 's1',  acto: 'Prólogo',        nombre: 'Un gusto, Ariel',           numero: '1',  duracion: '00:04:00', planificado: '2026-04-16', ensayado: '2026-04-16', personajes: ['Ari', 'Car'] },
   { id: 's2',  acto: 'Motín',          nombre: 'Hasta acá tu gestión',      numero: '2',  duracion: '00:13:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car', 'Jua', 'Her', 'Let', 'Tan'] },
   { id: 's3',  acto: 'Reemplazo',      nombre: 'Tu consorcio mejoró',       numero: '9',  duracion: '00:10:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Bet', 'Jua', 'Her', 'Let', 'Tan'] },
   { id: 's4',  acto: 'Cotidiana',      nombre: 'Los cuadros del tío',       numero: '3',  duracion: '00:01:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car'] },
@@ -305,8 +326,12 @@ const base64ToUtf8 = (b64) => {
 // GITHUB
 // ============================================================
 function detectRepo() {
+  let branch = 'main'
+  if (REPO_OVERRIDE.branch) {
+    branch= REPO_OVERRIDE.branch
+  }
   if (REPO_OVERRIDE.user && REPO_OVERRIDE.repo) {
-    return { user: REPO_OVERRIDE.user, repo: REPO_OVERRIDE.repo, branch: REPO_OVERRIDE.branch || 'main' };
+    return { user: REPO_OVERRIDE.user, repo: REPO_OVERRIDE.repo, branch };
   }
   const host = window.location.hostname;
   const path = window.location.pathname;
@@ -316,9 +341,9 @@ function detectRepo() {
     const user = m[1];
     const parts = path.split('/').filter(Boolean);
     if (parts.length === 0) {
-      return { user, repo: `${user}.github.io`, branch: 'main' };
+      return { user, repo: `${user}.github.io`, branch };
     }
-    return { user, repo: parts[0], branch: 'main' };
+    return { user, repo: parts[0], branch };
   }
   return null;
 }
@@ -420,23 +445,31 @@ const IconRefresh = (p) => <Icon {...p}><polyline points="23 4 23 10 17 10"/><po
 // ============================================================
 function CharacterRow({ personajes }) {
   return (
-    <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-      {CHARACTERS.map(c => {
-        const present = personajes.includes(c);
-        return (
-          <div key={c} title={c}
-            style={{
-              width: 18, height: 18, borderRadius: 3,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, fontWeight: 600, letterSpacing: '-0.02em',
-              backgroundColor: present ? CHAR_COLORS[c] : 'transparent',
-              border: present ? `1px solid ${CHAR_COLORS[c]}` : '1px dashed rgba(26,22,18,0.18)',
-              color: present ? '#f9f5ec' : 'rgba(26,22,18,0.28)',
-              flex: '0 0 auto',
-            }}
-          >{c.slice(0, 2)}</div>
-        );
-      })}
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {ACTORS.map(actor => (
+        <div key={actor.id} style={{ display: 'inline-flex', gap: 0, flex: '0 0 auto' }}
+          title={actor.characters.length > 1 ? `Mismo actor: ${actor.characters.join(' / ')}` : actor.characters[0]}>
+          {actor.characters.map((c, i) => {
+            const present = personajes.includes(c);
+            const isPair = actor.characters.length > 1;
+            const isFirst = i === 0;
+            const isLast = i === actor.characters.length - 1;
+            const radius = !isPair ? 3 : (isFirst ? '3px 0 0 3px' : (isLast ? '0 3px 3px 0' : 0));
+            return (
+              <div key={c}
+                style={{
+                  width: 18, height: 18, borderRadius: radius,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 600, letterSpacing: '-0.02em',
+                  backgroundColor: present ? CHAR_COLORS[c] : 'transparent',
+                  border: present ? `1px solid ${CHAR_COLORS[c]}` : '1px dashed rgba(26,22,18,0.18)',
+                  color: present ? '#f9f5ec' : 'rgba(26,22,18,0.28)',
+                  flex: '0 0 auto',
+                }}>{c.slice(0, 2)}</div>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -637,12 +670,16 @@ function TableView({ scenes, onUpdate, onDelete, onEdit, isAdmin }) {
           </tr>
           <tr>
             <ThEmpty/><ThEmpty/><ThEmpty/>
-            {CHARACTERS.map(c => (
-              <th key={c} className="border-paper" style={{
-                textAlign: 'center', fontSize: 10, fontWeight: 700, padding: '4px 0',
-                borderBottom: '1px solid', width: 28, color: CHAR_COLORS[c],
-              }}>{c}</th>
-            ))}
+            {CHARACTERS.map(c => {
+              const grp = CHAR_GROUP_INFO[c];
+              return (
+                <th key={c} className="border-paper" title={charTooltip(c)} style={{
+                  textAlign: 'center', fontSize: 10, fontWeight: 700, padding: '4px 0',
+                  borderBottom: '1px solid', width: 28, color: CHAR_COLORS[c],
+                  borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
+                }}>{c}</th>
+              );
+            })}
             <ThEmpty/><ThEmpty/><ThEmpty/>{isAdmin && <ThEmpty/>}
           </tr>
         </thead>
@@ -666,8 +703,12 @@ function TableView({ scenes, onUpdate, onDelete, onEdit, isAdmin }) {
               </Td>
               {CHARACTERS.map(c => {
                 const present = s.personajes.includes(c);
+                const grp = CHAR_GROUP_INFO[c];
                 return (
-                  <td key={c} className="border-paper" style={{ borderBottom: '1px solid', textAlign: 'center', padding: 0 }}>
+                  <td key={c} className="border-paper" style={{
+                    borderBottom: '1px solid', textAlign: 'center', padding: 0,
+                    borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
+                  }}>
                     {isAdmin ? (
                       <button onClick={() => {
                         const next = present ? s.personajes.filter(x => x !== c) : [...s.personajes, c];
@@ -676,7 +717,7 @@ function TableView({ scenes, onUpdate, onDelete, onEdit, isAdmin }) {
                         width: '100%', minWidth: 28, height: 28, border: 0,
                         background: present ? CHAR_COLORS[c] : 'transparent',
                         cursor: 'pointer',
-                      }} title={present ? `Quitar ${c}` : `Agregar ${c}`}/>
+                      }} title={present ? `Quitar ${c}` : `Agregar ${c} — ${charTooltip(c)}`}/>
                     ) : (
                       <div style={{
                         width: '100%', minWidth: 28, height: 28,
@@ -828,21 +869,30 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
             </Field>
           </div>
           <Field label="Personajes presentes">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-              {CHARACTERS.map(c => {
-                const on = draft.personajes.includes(c);
-                return (
-                  <button key={c} onClick={() => togglePersonaje(c)}
-                    style={{
-                      padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                      backgroundColor: on ? CHAR_COLORS[c] : 'transparent',
-                      border: `1.5px solid ${on ? CHAR_COLORS[c] : 'rgba(26,22,18,0.18)'}`,
-                      color: on ? '#f9f5ec' : CHAR_COLORS[c],
-                      cursor: ro ? 'default' : 'pointer',
-                      fontFamily: 'inherit',
-                    }}>{c}</button>
-                );
-              })}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+              {ACTORS.map(actor => (
+                <div key={actor.id} style={{ display: 'inline-flex', gap: 0 }}
+                  title={actor.characters.length > 1 ? `Mismo actor: ${actor.characters.join(' / ')}` : actor.characters[0]}>
+                  {actor.characters.map((c, i) => {
+                    const on = draft.personajes.includes(c);
+                    const isPair = actor.characters.length > 1;
+                    const isFirst = i === 0;
+                    const isLast = i === actor.characters.length - 1;
+                    const radius = !isPair ? 4 : (isFirst ? '4px 0 0 4px' : (isLast ? '0 4px 4px 0' : 0));
+                    return (
+                      <button key={c} onClick={() => togglePersonaje(c)}
+                        style={{
+                          padding: '4px 10px', borderRadius: radius, fontSize: 11, fontWeight: 600,
+                          backgroundColor: on ? CHAR_COLORS[c] : 'transparent',
+                          border: `1.5px solid ${on ? CHAR_COLORS[c] : 'rgba(26,22,18,0.18)'}`,
+                          color: on ? '#f9f5ec' : CHAR_COLORS[c],
+                          cursor: ro ? 'default' : 'pointer',
+                          fontFamily: 'inherit',
+                        }}>{c}</button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
             <p className="text-muted" style={{ fontSize: 10, marginTop: 6 }}>
               {draft.personajes.length === 0 ? 'Ninguno' : `${draft.personajes.length} de ${CHARACTERS.length}`}
