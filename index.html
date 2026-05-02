@@ -1002,8 +1002,18 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
 
 function ProgressBar({ scenes, onEdit }) {
   const sorted = useMemo(() => [...scenes].sort(sortByNumero), [scenes]);
+
+  const nextDateKey = useMemo(() => {
+    const t = todayISO();
+    const future = scenes.map(s => s.planificado).filter(d => d && d >= t).sort();
+    return future[0] || null;
+  }, [scenes]);
+
   const total = sorted.length;
   const rehearsed = sorted.filter(s => s.ensayado).length;
+  const upcoming = nextDateKey
+    ? sorted.filter(s => s.planificado === nextDateKey && !s.ensayado).length
+    : 0;
   const pct = total === 0 ? 0 : Math.round((rehearsed / total) * 100);
   if (total === 0) return null;
   return (
@@ -1014,22 +1024,33 @@ function ProgressBar({ scenes, onEdit }) {
         </span>
         <span className="text-ink-soft" style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
           <b>{rehearsed}</b><span className="text-muted"> / {total} ensayadas</span>
+          {upcoming > 0 && (
+            <span>
+              <span className="text-muted"> · </span>
+              <b className="text-accent">{upcoming}</b>
+              <span className="text-muted"> próximas</span>
+            </span>
+          )}
           <span className="text-rehearsed" style={{ marginLeft: 8, fontWeight: 700 }}>{pct}%</span>
         </span>
       </div>
       <div style={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
         {sorted.map(s => {
           const done = !!s.ensayado;
+          const isUpcoming = !done && nextDateKey && s.planificado === nextDateKey;
+          const fillColor = done ? 'var(--rehearsed)' : (isUpcoming ? 'var(--accent)' : 'var(--paper)');
+          const borderColor = done ? 'var(--rehearsed)' : (isUpcoming ? 'var(--accent)' : 'var(--border)');
           const titleParts = [`#${s.numero || '—'} ${s.nombre || 'sin título'}`];
           if (done) titleParts.push(`ensayada ${formatDateShort(s.ensayado)}`);
+          else if (isUpcoming) titleParts.push(`próximo ensayo: ${formatDateShort(s.planificado)}`);
           else if (s.planificado) titleParts.push(`planificada ${formatDateShort(s.planificado)}`);
           else titleParts.push('sin programar');
           return (
             <button key={s.id} onClick={() => onEdit(s)} title={titleParts.join(' · ')}
               style={{
                 flex: 1, minWidth: 6, height: 10,
-                background: done ? 'var(--rehearsed)' : 'var(--paper)',
-                border: `1px solid ${done ? 'var(--rehearsed)' : 'var(--border)'}`,
+                background: fillColor,
+                border: `1px solid ${borderColor}`,
                 borderRadius: 2, cursor: 'pointer', padding: 0,
                 transition: 'transform 0.1s, box-shadow 0.1s',
               }}
