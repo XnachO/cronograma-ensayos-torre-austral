@@ -253,6 +253,25 @@ function charTooltip(c) {
   return `${c} — mismo actor que ${otros.join(', ')}`;
 }
 
+// Helpers de identidad y migración del modelo de datos. Se declaran ANTES de INITIAL_SCENES
+// porque éste último los usa en su construcción.
+const newId = () => 'sc_' + Math.random().toString(36).slice(2, 10);
+const newSesionId = () => 'ses_' + Math.random().toString(36).slice(2, 10);
+
+// Migra una escena en formato viejo (planificado/ensayado planos) al formato con sesiones.
+// Si ya tiene 'sesiones', se devuelve tal cual.
+function migrateScene(s) {
+  if (Array.isArray(s.sesiones)) return s;
+  const { planificado, ensayado, ...rest } = s;
+  const sesiones = (planificado || ensayado)
+    ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
+    : [];
+  return { ...rest, sesiones };
+}
+function migrateScenes(arr) {
+  return arr.map(migrateScene);
+}
+
 const INITIAL_SCENES_RAW = [
   { id: 's1',  acto: 'Prólogo',        nombre: 'Un gusto, Ariel',           numero: '1',  duracion: '00:04:00', planificado: '2026-04-16', ensayado: '2026-04-16', personajes: ['Ari', 'Car'] },
   { id: 's2',  acto: 'Motín',          nombre: 'Hasta acá tu gestión',      numero: '2',  duracion: '00:13:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car', 'Jua', 'Her', 'Let', 'Tan'] },
@@ -296,23 +315,6 @@ const INITIAL_SCENES = INITIAL_SCENES_RAW.map(s => {
 // HELPERS
 // ============================================================
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
-
-const newId = () => 'sc_' + Math.random().toString(36).slice(2, 10);
-const newSesionId = () => 'ses_' + Math.random().toString(36).slice(2, 10);
-
-// Migra una escena en formato viejo (planificado/ensayado planos) al formato con sesiones.
-// Si ya tiene 'sesiones', se devuelve tal cual.
-function migrateScene(s) {
-  if (Array.isArray(s.sesiones)) return s;
-  const { planificado, ensayado, ...rest } = s;
-  const sesiones = (planificado || ensayado)
-    ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
-    : [];
-  return { ...rest, sesiones };
-}
-function migrateScenes(arr) {
-  return arr.map(migrateScene);
-}
 
 const parseDurationToSec = (str) => {
   if (!str) return 0;
