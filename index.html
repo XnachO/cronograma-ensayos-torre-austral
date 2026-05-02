@@ -86,6 +86,7 @@
       border-radius: 5px;
       cursor: pointer;
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      position: relative;
     }
     .scene-card.is-draggable { cursor: grab; }
     .scene-card.is-draggable:active { cursor: grabbing; }
@@ -94,6 +95,16 @@
       box-shadow: 0 4px 14px -6px rgba(26,22,18,0.25);
     }
     .scene-card.is-dragging { opacity: 0.4; }
+    .scene-card.is-drop-target::before {
+      content: '';
+      position: absolute;
+      left: -1px; right: -1px;
+      top: -5px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      pointer-events: none;
+    }
     .col-drop {
       background: rgba(235,226,207,0.5);
       border: 1px solid transparent;
@@ -474,7 +485,7 @@ function CharacterRow({ personajes }) {
   );
 }
 
-function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin }) {
+function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin, isDropTarget, onHoverAsDropTarget }) {
   const isRehearsed = !!scene.ensayado;
   const draggable = isAdmin;
   const dragHandlers = isAdmin ? {
@@ -486,11 +497,27 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin 
     },
     onDragEnd: onDragEnd,
   } : {};
+  // Cuando se arrastra OTRA tarjeta y pasa por encima de ésta, marcamos esta tarjeta
+  // como destino del drop (insertar antes de mí). stopPropagation evita que la columna
+  // sobreescriba el destino con "final de columna".
+  const dropTargetHandlers = isAdmin ? {
+    onDragOver: (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (!isDragging) onHoverAsDropTarget(scene.id);
+    },
+  } : {};
+  const showDropLine = isDropTarget && !isDragging;
   return (
     <div
       {...dragHandlers}
+      {...dropTargetHandlers}
       onClick={() => onEdit(scene)}
-      className={'scene-card group relative ' + (draggable ? 'is-draggable ' : '') + (isDragging ? 'is-dragging' : '')}
+      className={'scene-card group relative '
+        + (draggable ? 'is-draggable ' : '')
+        + (isDragging ? 'is-dragging ' : '')
+        + (showDropLine ? 'is-drop-target' : '')}
       style={{ borderLeftColor: isRehearsed ? 'var(--rehearsed)' : 'var(--accent)' }}
     >
       <div style={{ padding: '8px 10px' }}>
@@ -527,18 +554,25 @@ function SceneCard({ scene, onEdit, isDragging, onDragStart, onDragEnd, isAdmin 
 }
 
 function DateColumn({
-  dateKey, label, sublabel, scenes, onDrop, onEdit, totalSec,
-  isOver, setIsOver, accent, draggingId, onDragStart, onDragEnd, isNext, isAdmin,
+  dateKey, label, sublabel, scenes, onColumnDragOver, onColumnDragLeave, onColumnDrop,
+  dropBeforeId, onCardHover, onEdit, totalSec,
+  isOver, accent, draggingId, onDragStart, onDragEnd, isNext, isAdmin,
 }) {
   const dropHandlers = isAdmin ? {
-    onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (!isOver) setIsOver(true); },
+    onDragOver: (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      // Esto solo dispara cuando estamos sobre espacio vacío de la columna
+      // (las tarjetas tienen stopPropagation en su propio onDragOver).
+      onColumnDragOver(dateKey);
+    },
     onDragLeave: (e) => {
       const rect = e.currentTarget.getBoundingClientRect();
       if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
-        setIsOver(false);
+        onColumnDragLeave();
       }
     },
-    onDrop: (e) => { e.preventDefault(); setIsOver(false); onDrop(dateKey); },
+    onDrop: (e) => { e.preventDefault(); onColumnDrop(dateKey); },
   } : {};
   const missingActors = useMemo(() => missingActorsForScenes(scenes), [scenes]);
   const showActorStatus = dateKey !== '' && scenes.length > 0;
@@ -602,6 +636,8 @@ function DateColumn({
             isDragging={draggingId === s.id}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isAdmin={isAdmin}
+            isDropTarget={dropBeforeId === s.id}
+            onHoverAsDropTarget={(sceneId) => onCardHover(dateKey, sceneId)}
           />
         ))}
       </div>
@@ -611,6 +647,16 @@ function DateColumn({
 
 function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDragEnd, isAdmin }) {
   const [overKey, setOverKey] = useState(null);
+  const [dropBeforeId, setDropBeforeId] = useState(null);
+
+  // Si el drag termina sin drop (Escape, soltar fuera) limpiamos el estado visual
+  useEffect(() => {
+    if (draggingId === null) {
+      setOverKey(null);
+      setDropBeforeId(null);
+    }
+  }, [draggingId]);
+
   const groups = useMemo(() => {
     const map = new Map();
     map.set('', []);
@@ -619,7 +665,8 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
       if (!map.has(k)) map.set(k, []);
       map.get(k).push(s);
     });
-    map.forEach(arr => arr.sort(sortByNumero));
+    // No ordenamos por número: el orden dentro de cada columna es el orden del array
+    // (el admin lo modifica arrastrando entre tarjetas)
     const keys = Array.from(map.keys()).sort((a, b) => {
       if (a === '') return -1;
       if (b === '') return 1;
@@ -634,6 +681,24 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
     return future[0] || null;
   }, [groups]);
 
+  const handleColumnDragOver = useCallback((dateKey) => {
+    setOverKey(dateKey);
+    setDropBeforeId(null);
+  }, []);
+  const handleColumnDragLeave = useCallback(() => {
+    setOverKey(null);
+    setDropBeforeId(null);
+  }, []);
+  const handleCardHover = useCallback((dateKey, sceneId) => {
+    setOverKey(dateKey);
+    setDropBeforeId(sceneId);
+  }, []);
+  const handleColumnDrop = useCallback((dateKey) => {
+    onMoveScene(dateKey, dropBeforeId);
+    setOverKey(null);
+    setDropBeforeId(null);
+  }, [onMoveScene, dropBeforeId]);
+
   return (
     <div data-board-scroll className="scrolly" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, paddingTop: 12, paddingRight: 16 }}>
       {groups.map(({ key, items }) => {
@@ -644,8 +709,13 @@ function BoardView({ scenes, onEdit, onMoveScene, draggingId, onDragStart, onDra
         return (
           <DateColumn key={key} dateKey={key} label={label} sublabel={sublabel}
             scenes={items} totalSec={totalSec}
-            onDrop={onMoveScene} onEdit={onEdit}
-            isOver={overKey === key} setIsOver={(v) => setOverKey(v ? key : null)}
+            onColumnDragOver={handleColumnDragOver}
+            onColumnDragLeave={handleColumnDragLeave}
+            onColumnDrop={handleColumnDrop}
+            dropBeforeId={overKey === key ? dropBeforeId : null}
+            onCardHover={handleCardHover}
+            onEdit={onEdit}
+            isOver={overKey === key}
             accent={accent} draggingId={draggingId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isNext={key === nextDateKey} isAdmin={isAdmin}
@@ -1027,7 +1097,7 @@ async function exportToXLSX(scenes) {
   ];
   ws['!merges'] = [{ s: { r: 0, c: 3 }, e: { r: 0, c: 3 + CHARACTERS.length - 1 } }];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'v2');
+  XLSX.utils.book_append_sheet(wb, ws, 'Tablero');
 
   const byDay = new Map();
   sorted.forEach(s => {
@@ -1372,9 +1442,30 @@ function App({ repo }) {
     setIsNewScene(true);
     setEditing({ id: newId(), acto: '', nombre: '', numero: '', duracion: '', planificado: '', ensayado: '', personajes: [] });
   }, []);
-  const handleMoveScene = useCallback((targetDateKey) => {
+  const handleMoveScene = useCallback((targetDateKey, beforeSceneId = null) => {
     if (!draggingId) return;
-    setScenes(prev => prev.map(s => s.id === draggingId ? { ...s, planificado: targetDateKey || '' } : s));
+    // Soltar sobre uno mismo: no-op
+    if (beforeSceneId === draggingId) { setDraggingId(null); return; }
+    setScenes(prev => {
+      const dragged = prev.find(s => s.id === draggingId);
+      if (!dragged) return prev;
+      const without = prev.filter(s => s.id !== draggingId);
+      const updated = { ...dragged, planificado: targetDateKey || '' };
+      // Caso 1: drop sobre una tarjeta específica → insertar justo antes
+      if (beforeSceneId) {
+        const idx = without.findIndex(s => s.id === beforeSceneId);
+        if (idx === -1) return [...without, updated];
+        return [...without.slice(0, idx), updated, ...without.slice(idx)];
+      }
+      // Caso 2: drop sobre espacio vacío de la columna → al final de su grupo
+      const targetKey = targetDateKey || '';
+      let lastIdx = -1;
+      without.forEach((s, i) => {
+        if ((s.planificado || '') === targetKey) lastIdx = i;
+      });
+      if (lastIdx === -1) return [...without, updated]; // grupo vacío: al final del array
+      return [...without.slice(0, lastIdx + 1), updated, ...without.slice(lastIdx + 1)];
+    });
     setDraggingId(null);
   }, [draggingId]);
   const handleReset = useCallback(() => {
