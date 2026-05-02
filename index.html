@@ -259,12 +259,14 @@ const newId = () => 'sc_' + Math.random().toString(36).slice(2, 10);
 const newSesionId = () => 'ses_' + Math.random().toString(36).slice(2, 10);
 
 // Migra una escena en formato viejo (planificado/ensayado planos) al formato con sesiones.
-// Si ya tiene 'sesiones', se devuelve tal cual.
+// Si ya tiene 'sesiones', se normalizan los `ensayado` a boolean.
 function migrateScene(s) {
-  if (Array.isArray(s.sesiones)) return s;
+  if (Array.isArray(s.sesiones)) {
+    return { ...s, sesiones: s.sesiones.map(ses => ({ ...ses, ensayado: !!ses.ensayado })) };
+  }
   const { planificado, ensayado, ...rest } = s;
   const sesiones = (planificado || ensayado)
-    ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
+    ? [{ id: newSesionId(), planificado: planificado || '', ensayado: !!ensayado }]
     : [];
   return { ...rest, sesiones };
 }
@@ -300,16 +302,9 @@ const INITIAL_SCENES_RAW = [
 ];
 
 // Las escenas iniciales se "migran" al formato nuevo (con array de sesiones) en tiempo
-// de carga; así no hace falta reescribir las 24 entries de arriba a mano.
-const INITIAL_SCENES = INITIAL_SCENES_RAW.map(s => {
-  const { planificado, ensayado, ...rest } = s;
-  return {
-    ...rest,
-    sesiones: (planificado || ensayado)
-      ? [{ id: newSesionId(), planificado: planificado || '', ensayado: ensayado || '' }]
-      : [],
-  };
-});
+// de carga; así no hace falta reescribir las 24 entries de arriba a mano. Reusamos
+// migrateScenes para que también se aplique la conversión de `ensayado` a boolean.
+const INITIAL_SCENES = migrateScenes(INITIAL_SCENES_RAW);
 
 // ============================================================
 // HELPERS
@@ -603,7 +598,7 @@ function SceneCard({
         <CharacterRow personajes={scene.personajes} />
         {isRehearsed && (
           <div className="text-rehearsed" style={{ marginTop: 6, fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <IconCheck size={11} /> Ensayada {formatDateShort(sesion.ensayado)}
+            <IconCheck size={11} /> Ensayada
           </div>
         )}
       </div>
@@ -764,7 +759,7 @@ function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, isCopying, 
       const total = sesiones.length;
       if (sesiones.length === 0) {
         // escena sin ninguna sesión → la mostramos como "Sin asignar"
-        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: '' }, multiSession: 0, isPhantom: true });
+        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: false }, multiSession: 0, isPhantom: true });
         return;
       }
       sesiones.forEach(sesion => {
@@ -880,14 +875,20 @@ function TableView({ scenes, onUpdate, onUpdateSesion, onDeleteSesion, onAddSesi
         vb = parseDurationToSec(b.scene.duracion);
         return va - vb;
       }
-      if (sortBy === 'planificado' || sortBy === 'ensayado') {
-        va = a.sesion ? (a.sesion[sortBy] || '') : '';
-        vb = b.sesion ? (b.sesion[sortBy] || '') : '';
+      if (sortBy === 'planificado') {
+        va = a.sesion ? (a.sesion.planificado || '') : '';
+        vb = b.sesion ? (b.sesion.planificado || '') : '';
         // Vacíos al final
         if (!va && !vb) return 0;
         if (!va) return 1;
         if (!vb) return -1;
         return va.localeCompare(vb);
+      }
+      if (sortBy === 'ensayado') {
+        // boolean: false primero, true después (asc); fila phantom = false
+        va = a.sesion ? (a.sesion.ensayado ? 1 : 0) : 0;
+        vb = b.sesion ? (b.sesion.ensayado ? 1 : 0) : 0;
+        return va - vb;
       }
       // strings: acto, nombre
       va = String(a.scene[sortBy] || '').toLowerCase();
@@ -919,7 +920,7 @@ function TableView({ scenes, onUpdate, onUpdateSesion, onDeleteSesion, onAddSesi
             <Th colSpan={CHARACTERS.length} center>Personajes</Th>
             <ThSort onClick={() => onHeaderClick('duracion')}>Duración{sortIndicator('duracion')}</ThSort>
             <ThSort onClick={() => onHeaderClick('planificado')}>Planificado{sortIndicator('planificado')}</ThSort>
-            <ThSort onClick={() => onHeaderClick('ensayado')}>Ensayado{sortIndicator('ensayado')}</ThSort>
+            <ThSort onClick={() => onHeaderClick('ensayado')}>Ensayada{sortIndicator('ensayado')}</ThSort>
             {isAdmin && <Th />}
           </tr>
           <tr>
@@ -1001,10 +1002,15 @@ function TableView({ scenes, onUpdate, onUpdateSesion, onDeleteSesion, onAddSesi
                   {isPhantom
                     ? <span className="text-muted" style={{ padding: '4px 6px', fontSize: 11 }}>—</span>
                     : isAdmin
-                      ? <input type="date" className="cell-input" value={sesion.ensayado}
-                          onChange={e => onUpdateSesion(s.id, sesion.id, { ensayado: e.target.value })}
-                          style={{ fontVariantNumeric: 'tabular-nums' }}/>
-                      : <span style={{ padding: '4px 6px', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: sesion.ensayado ? 'var(--rehearsed)' : 'var(--muted)' }}>{sesion.ensayado ? formatDateShort(sesion.ensayado) : '—'}</span>}
+                      ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 28 }}>
+                          <input type="checkbox" checked={!!sesion.ensayado}
+                            onChange={e => onUpdateSesion(s.id, sesion.id, { ensayado: e.target.checked })}
+                            style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--rehearsed)' }}
+                            title={sesion.ensayado ? 'Marcada como ensayada' : 'Marcar como ensayada'}/>
+                        </div>
+                      : <span style={{ padding: '4px 6px', fontSize: 12, color: sesion.ensayado ? 'var(--rehearsed)' : 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {sesion.ensayado ? <><IconCheck size={12}/> Sí</> : 'No'}
+                        </span>}
                 </Td>
                 {isAdmin && (
                   <Td>
@@ -1170,15 +1176,22 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
                           style={{ padding: '3px 6px', fontSize: 12 }}/>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                    <span className="text-muted" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ensayado</span>
+                    <span className="text-muted" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ensayada</span>
                     {ro
-                      ? <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', color: ses.ensayado ? 'var(--rehearsed)' : undefined }}>{ses.ensayado ? formatDateShort(ses.ensayado) : '—'}</span>
-                      : <input type="date" className="modal-input" value={ses.ensayado}
-                          onChange={e => setDraft(d => ({
-                            ...d,
-                            sesiones: d.sesiones.map(x => x.id === ses.id ? { ...x, ensayado: e.target.value } : x),
-                          }))}
-                          style={{ padding: '3px 6px', fontSize: 12 }}/>}
+                      ? <span style={{ fontSize: 12, color: ses.ensayado ? 'var(--rehearsed)' : 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 4, height: 26 }}>
+                          {ses.ensayado ? <><IconCheck size={12}/> Sí</> : 'No'}
+                        </span>
+                      : <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, cursor: 'pointer', fontSize: 12 }}>
+                          <input type="checkbox" checked={!!ses.ensayado}
+                            onChange={e => setDraft(d => ({
+                              ...d,
+                              sesiones: d.sesiones.map(x => x.id === ses.id ? { ...x, ensayado: e.target.checked } : x),
+                            }))}
+                            style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--rehearsed)' }}/>
+                          <span style={{ color: ses.ensayado ? 'var(--rehearsed)' : 'var(--ink-soft)' }}>
+                            {ses.ensayado ? 'Sí' : 'No'}
+                          </span>
+                        </label>}
                   </div>
                   {!ro && (
                     <button className="btn-icon" title="Eliminar esta sesión"
@@ -1191,7 +1204,7 @@ function SceneEditModal({ scene, onSave, onClose, onDelete, isNew, isAdmin }) {
               {!ro && (
                 <button onClick={() => setDraft(d => ({
                   ...d,
-                  sesiones: [...(d.sesiones || []), { id: newSesionId(), planificado: '', ensayado: '' }],
+                  sesiones: [...(d.sesiones || []), { id: newSesionId(), planificado: '', ensayado: false }],
                 }))}
                   className="btn-secondary" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
                   <IconPlus size={11}/> Agregar sesión
@@ -1317,7 +1330,11 @@ function ProgressBar({ scenes, onEdit }) {
             : (enProximo ? 'var(--accent)' : 'var(--border)');
           const titleParts = [`#${s.numero || '—'} ${s.nombre || 'sin título'}`];
           const sesiones = s.sesiones || [];
-          const ensayadasFechas = sesiones.filter(x => x.ensayado).map(x => formatDateShort(x.ensayado));
+          // Las fechas que mostramos en el tooltip de "ensayada" son las planificado de las
+          // sesiones marcadas (ya no guardamos fecha de ensayo distinta a la planificada).
+          const ensayadasFechas = sesiones
+            .filter(x => x.ensayado && x.planificado)
+            .map(x => formatDateShort(x.planificado));
           if (ensayadasFechas.length > 0) titleParts.push(`ensayada: ${ensayadasFechas.join(', ')}`);
           if (enProximo) titleParts.push(`próximo ensayo: ${formatDateShort(nextDateKey)}`);
           if (sesiones.length === 0) titleParts.push('sin programar');
@@ -1377,14 +1394,16 @@ async function exportToXLSX(scenes) {
   const headerRow1 = ['', '', '', 'Personajes', ...Array(CHARACTERS.length - 1).fill(''), '', '', ''];
   const headerRow2 = ['Acto', 'Escena', 'Número', ...CHARACTERS, 'Duración', 'Planificado', 'Ensayado'];
   // Aplanamos a sesiones. Escenas sin sesiones aparecen una vez con fechas vacías.
+  // ensayado: null → fila phantom (escena sin sesiones, exportar como "");
+  //          true/false → sesiones reales, exportar como "Sí" o "No".
   const flatRows = [];
   scenes.forEach(s => {
     const sesiones = s.sesiones || [];
     if (sesiones.length === 0) {
-      flatRows.push({ scene: s, planificado: '', ensayado: '' });
+      flatRows.push({ scene: s, planificado: '', ensayado: null });
     } else {
       sesiones.forEach(ses => flatRows.push({
-        scene: s, planificado: ses.planificado || '', ensayado: ses.ensayado || '',
+        scene: s, planificado: ses.planificado || '', ensayado: !!ses.ensayado,
       }));
     }
   });
@@ -1400,7 +1419,7 @@ async function exportToXLSX(scenes) {
     ...CHARACTERS.map(c => s.personajes.includes(c) ? '●' : ''),
     s.duracion,
     planificado ? formatDateShort(planificado) : '',
-    ensayado ? formatDateShort(ensayado) : '',
+    ensayado === null ? '' : (ensayado ? 'Sí' : 'No'),
   ]);
   const aoa = [headerRow1, headerRow2, ...dataRows];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1781,7 +1800,7 @@ function App({ repo }) {
   const handleAddSesion = useCallback((sceneId) => {
     setScenes(prev => prev.map(s => {
       if (s.id !== sceneId) return s;
-      return { ...s, sesiones: [...(s.sesiones || []), { id: newSesionId(), planificado: '', ensayado: '' }] };
+      return { ...s, sesiones: [...(s.sesiones || []), { id: newSesionId(), planificado: '', ensayado: false }] };
     }));
   }, []);
 
@@ -1813,7 +1832,7 @@ function App({ repo }) {
 
       const targetKey = targetDateKey || '';
       const newSesion = copy
-        ? { id: newSesionId(), planificado: targetKey, ensayado: '' }
+        ? { id: newSesionId(), planificado: targetKey, ensayado: false }
         : { ...sourceSesion, planificado: targetKey };
 
       return prev.map(s => {
