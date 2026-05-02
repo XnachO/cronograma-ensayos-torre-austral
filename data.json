@@ -30,6 +30,22 @@
     ]
   },
   {
+    "id": "s3",
+    "acto": "Reemplazo",
+    "nombre": "Tu consorcio mejoró",
+    "numero": "9",
+    "duracion": "00:10:00",
+    "planificado": "2026-04-30",
+    "ensayado": "2026-04-30",
+    "personajes": [
+      "Bet",
+      "Jua",
+      "Her",
+      "Let",
+      "Tan"
+    ]
+  },
+  {
     "id": "s4",
     "acto": "Cotidiana",
     "nombre": "Los cuadros del tío",
@@ -53,22 +69,6 @@
     "personajes": [
       "Let",
       "Nic"
-    ]
-  },
-  {
-    "id": "s3",
-    "acto": "Reemplazo",
-    "nombre": "Tu consorcio mejoró",
-    "numero": "9",
-    "duracion": "00:10:00",
-    "planificado": "2026-04-30",
-    "ensayado": "2026-04-30",
-    "personajes": [
-      "Bet",
-      "Jua",
-      "Her",
-      "Let",
-      "Tan"
     ]
   },
   {
@@ -316,13 +316,9 @@
       "Ari",
       "Car",
       "Bet",
-      "Toñ",
       "Jua",
-      "Jos",
       "Her",
-      "Lor",
       "Let",
-      "Nic",
       "Tan"
     ]
   },
