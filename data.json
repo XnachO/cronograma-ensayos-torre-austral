@@ -5,11 +5,16 @@
     "nombre": "Un gusto, Ariel",
     "numero": "1",
     "duracion": "00:04:00",
-    "planificado": "2026-04-16",
-    "ensayado": "2026-04-16",
     "personajes": [
       "Ari",
       "Car"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_cwoer79b",
+        "planificado": "2026-04-16",
+        "ensayado": true
+      }
     ]
   },
   {
@@ -18,8 +23,6 @@
     "nombre": "Hasta acá tu gestión",
     "numero": "2",
     "duracion": "00:13:00",
-    "planificado": "2026-04-30",
-    "ensayado": "2026-04-30",
     "personajes": [
       "Ari",
       "Car",
@@ -27,6 +30,13 @@
       "Her",
       "Let",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_co4ylwd4",
+        "planificado": "2026-04-30",
+        "ensayado": true
+      }
     ]
   },
   {
@@ -35,14 +45,19 @@
     "nombre": "Tu consorcio mejoró",
     "numero": "9",
     "duracion": "00:10:00",
-    "planificado": "2026-04-30",
-    "ensayado": "2026-04-30",
     "personajes": [
       "Bet",
       "Jua",
       "Her",
       "Let",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_4v6th15p",
+        "planificado": "2026-04-30",
+        "ensayado": true
+      }
     ]
   },
   {
@@ -51,11 +66,16 @@
     "nombre": "Los cuadros del tío",
     "numero": "3",
     "duracion": "00:01:00",
-    "planificado": "2026-04-30",
-    "ensayado": "2026-04-30",
     "personajes": [
       "Ari",
       "Car"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_zbb4ifjx",
+        "planificado": "2026-04-30",
+        "ensayado": true
+      }
     ]
   },
   {
@@ -64,11 +84,16 @@
     "nombre": "¿Seguís acá, bombón?",
     "numero": "4",
     "duracion": "00:02:00",
-    "planificado": "2026-04-30",
-    "ensayado": "2026-04-30",
     "personajes": [
       "Let",
       "Nic"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_thzd9b15",
+        "planificado": "2026-04-30",
+        "ensayado": true
+      }
     ]
   },
   {
@@ -77,11 +102,16 @@
     "nombre": "¡Estoy yendo, José!",
     "numero": "5",
     "duracion": "",
-    "planificado": "2026-05-14",
-    "ensayado": "",
     "personajes": [
       "Jua",
       "Jos"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_utkcszpt",
+        "planificado": "2026-05-14",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -90,10 +120,15 @@
     "nombre": "El ensayo de Tani",
     "numero": "6",
     "duracion": "",
-    "planificado": "2026-05-07",
-    "ensayado": "",
     "personajes": [
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_o8rb61in",
+        "planificado": "2026-05-07",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -101,12 +136,17 @@
     "acto": "Cotidiana",
     "nombre": "Teléfono descompuesto",
     "numero": "7",
-    "duracion": "",
-    "planificado": "2026-05-07",
-    "ensayado": "",
+    "duracion": "00:05:00",
     "personajes": [
       "Her",
       "Lor"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_f7m74sn0",
+        "planificado": "2026-05-07",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -115,11 +155,16 @@
     "nombre": "Es para cuidarte a vos",
     "numero": "8",
     "duracion": "",
-    "planificado": "2026-05-07",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_wh4glgzi",
+        "planificado": "2026-05-07",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -128,12 +173,17 @@
     "nombre": "Lo mejor era no atenderla",
     "numero": "10",
     "duracion": "00:05:00",
-    "planificado": "2026-05-07",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car",
       "Bet"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_u3lwivyi",
+        "planificado": "2026-05-07",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -142,11 +192,16 @@
     "nombre": "Rituales paganos",
     "numero": "11",
     "duracion": "00:04:00",
-    "planificado": "2026-05-07",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Let"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_cwzt1mkg",
+        "planificado": "2026-05-07",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -155,12 +210,17 @@
     "nombre": "AGSA",
     "numero": "12",
     "duracion": "",
-    "planificado": "2026-05-14",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Jua",
       "Jos"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_k43m83ar",
+        "planificado": "2026-05-14",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -169,12 +229,17 @@
     "nombre": "APSA no conoce de excepciones",
     "numero": "13",
     "duracion": "00:06:00",
-    "planificado": "2026-05-14",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Her",
       "Lor"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_g2k3wdbn",
+        "planificado": "2026-05-14",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -183,12 +248,17 @@
     "nombre": "Bolsa de basura",
     "numero": "14",
     "duracion": "00:04:00",
-    "planificado": "2026-05-14",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Toñ",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_c33hn54i",
+        "planificado": "2026-05-14",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -197,11 +267,16 @@
     "nombre": "72 horas",
     "numero": "15",
     "duracion": "",
-    "planificado": "2026-05-21",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Bet"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_x0fljdnx",
+        "planificado": "2026-05-21",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -210,13 +285,18 @@
     "nombre": "APSA administra el bien",
     "numero": "16",
     "duracion": "",
-    "planificado": "2026-05-21",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Bet",
       "Her",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_ttnq3p23",
+        "planificado": "2026-05-21",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -225,12 +305,17 @@
     "nombre": "Ariel no se va",
     "numero": "17",
     "duracion": "",
-    "planificado": "2026-05-21",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car",
       "Bet"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_rro83cqv",
+        "planificado": "2026-05-21",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -239,12 +324,17 @@
     "nombre": "No más llantos",
     "numero": "18",
     "duracion": "",
-    "planificado": "2026-05-28",
-    "ensayado": "",
     "personajes": [
       "Her",
       "Lor",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_i2tx4s50",
+        "planificado": "2026-05-28",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -253,11 +343,16 @@
     "nombre": "Felizmente separada",
     "numero": "19",
     "duracion": "",
-    "planificado": "2026-05-28",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_ikw1o4ro",
+        "planificado": "2026-05-28",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -266,12 +361,17 @@
     "nombre": "Dolor espiritual",
     "numero": "20",
     "duracion": "",
-    "planificado": "2026-05-28",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Her",
       "Let"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_1czd25jr",
+        "planificado": "2026-05-28",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -280,14 +380,19 @@
     "nombre": "Campo o departamento",
     "numero": "21",
     "duracion": "",
-    "planificado": "2026-05-28",
-    "ensayado": "",
     "personajes": [
       "Bet",
       "Jua",
       "Jos",
       "Let",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_pgsdq0qa",
+        "planificado": "2026-05-28",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -296,12 +401,17 @@
     "nombre": "Chau, Ariel",
     "numero": "22",
     "duracion": "",
-    "planificado": "2026-06-04",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car",
       "Toñ"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_we8i2939",
+        "planificado": "2026-06-04",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -310,8 +420,6 @@
     "nombre": "Chau, Carla",
     "numero": "23",
     "duracion": "",
-    "planificado": "2026-06-04",
-    "ensayado": "",
     "personajes": [
       "Ari",
       "Car",
@@ -320,6 +428,13 @@
       "Her",
       "Let",
       "Tan"
+    ],
+    "sesiones": [
+      {
+        "id": "ses_b1lnu9t1",
+        "planificado": "2026-06-04",
+        "ensayado": false
+      }
     ]
   },
   {
@@ -328,8 +443,13 @@
     "nombre": "Ficus Lyrata",
     "numero": "24",
     "duracion": "",
-    "planificado": "2026-06-04",
-    "ensayado": "",
-    "personajes": []
+    "personajes": [],
+    "sesiones": [
+      {
+        "id": "ses_7tkakgan",
+        "planificado": "2026-06-04",
+        "ensayado": false
+      }
+    ]
   }
 ]
