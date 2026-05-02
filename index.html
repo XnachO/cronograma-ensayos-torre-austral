@@ -351,8 +351,12 @@ const formatSecCompact = (sec) => {
   if (!sec) return '—';
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+  const s = sec % 60;
+  const parts = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0 || h > 0) parts.push(`${m}m`);
+  if (s > 0) parts.push(`${s}s`);
+  return parts.length === 0 ? '0s' : parts.join(' ');
 };
 
 const WEEKDAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -611,7 +615,7 @@ function SceneCard({
           )}
           {scene.duracion && (
             <span className="text-ink-soft" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconClock size={9} />{scene.duracion.slice(0, 5)}
+              <IconClock size={9} />{scene.duracion.endsWith(':00') ? scene.duracion.slice(0, 5) : scene.duracion}
             </span>
           )}
         </div>
