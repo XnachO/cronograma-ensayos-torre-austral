@@ -499,7 +499,7 @@ function CharacterRow({ personajes }) {
 }
 
 function SceneCard({
-  scene, sesion, onEdit, isDragging, onDragStart, onDragEnd, isAdmin, multiSession,
+  scene, sesion, onEdit, isDragging, onDragStart, onDragEnd, isAdmin, sesionOrdinal, totalSesiones,
 }) {
   const isRehearsed = !!sesion.ensayado;
   const draggable = isAdmin;
@@ -537,13 +537,13 @@ function SceneCard({
               fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em',
               flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{scene.acto || 'sin acto'}</span>
-          {multiSession && (
-            <span className="text-muted" title={`Esta escena se planificó ${multiSession} veces`}
+          {sesionOrdinal && (
+            <span className="text-muted" title={`Sesión ${sesionOrdinal} de ${totalSesiones}`}
               style={{
                 fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
                 padding: '1px 5px', borderRadius: 8,
                 background: 'rgba(107,31,35,0.10)', color: 'var(--accent)',
-              }}>×{multiSession}</span>
+              }}>×{sesionOrdinal}</span>
           )}
           {scene.duracion && (
             <span className="text-ink-soft" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -655,12 +655,13 @@ function DateColumn({
             {isAdmin ? (isCopying ? 'Soltá para duplicar acá' : 'Soltá una escena acá') : 'Sin escenas'}
           </div>
         )}
-        {cards.map(({ scene, sesion, multiSession }) => (
+        {cards.map(({ scene, sesion, sesionOrdinal, totalSesiones }) => (
           <SceneCard key={sesion.id} scene={scene} sesion={sesion} onEdit={onEdit}
             isDragging={draggingSesionId === sesion.id}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isAdmin={isAdmin}
-            multiSession={multiSession > 1 ? multiSession : null}
+            sesionOrdinal={totalSesiones > 1 ? sesionOrdinal : null}
+            totalSesiones={totalSesiones}
           />
         ))}
       </div>
@@ -711,8 +712,9 @@ function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, onDragStart
     return keys;
   }, [draggingCard, draggingSesionId, isCopying]);
 
-  // Aplanamos: una entrada por sesión. Cada entrada también lleva multiSession (cuántas
-  // sesiones tiene esa escena en total) para mostrar el badge ×N en la tarjeta.
+  // Aplanamos: una entrada por sesión. Cada entrada lleva el número de sesión (1, 2, 3…)
+  // calculado por orden cronológico de planificado dentro de la escena, y total para
+  // saber si mostrar el badge.
   // Dentro de cada columna, las tarjetas se ordenan por número de escena.
   const groups = useMemo(() => {
     const map = new Map();
@@ -722,13 +724,18 @@ function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, onDragStart
       const total = sesiones.length;
       if (sesiones.length === 0) {
         // escena sin ninguna sesión → la mostramos como "Sin asignar"
-        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: false }, multiSession: 0, isPhantom: true });
+        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: false }, sesionOrdinal: 0, totalSesiones: 0, isPhantom: true });
         return;
       }
+      // Asignar ordinal por fecha asc. Sesiones sin fecha quedan al final.
+      const ordinalById = new Map();
+      [...sesiones]
+        .sort((a, b) => (a.planificado || '\uFFFF').localeCompare(b.planificado || '\uFFFF'))
+        .forEach((s, i) => ordinalById.set(s.id, i + 1));
       sesiones.forEach(sesion => {
         const k = sesion.planificado || '';
         if (!map.has(k)) map.set(k, []);
-        map.get(k).push({ scene, sesion, multiSession: total });
+        map.get(k).push({ scene, sesion, sesionOrdinal: ordinalById.get(sesion.id), totalSesiones: total });
       });
     });
     // Sort por número de escena dentro de cada columna
