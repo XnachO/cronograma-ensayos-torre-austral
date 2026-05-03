@@ -253,8 +253,7 @@ function charTooltip(c) {
   return `${c} — mismo actor que ${otros.join(', ')}`;
 }
 
-// Helpers de identidad y migración del modelo de datos. Se declaran ANTES de INITIAL_SCENES
-// porque éste último los usa en su construcción.
+// Helpers de identidad y migración del modelo de datos.
 const newId = () => 'sc_' + Math.random().toString(36).slice(2, 10);
 const newSesionId = () => 'ses_' + Math.random().toString(36).slice(2, 10);
 
@@ -274,37 +273,6 @@ function migrateScenes(arr) {
   return arr.map(migrateScene);
 }
 
-const INITIAL_SCENES_RAW = [
-  { id: 's1',  acto: 'Prólogo',        nombre: 'Un gusto, Ariel',           numero: '1',  duracion: '00:04:00', planificado: '2026-04-16', ensayado: '2026-04-16', personajes: ['Ari', 'Car'] },
-  { id: 's2',  acto: 'Motín',          nombre: 'Hasta acá tu gestión',      numero: '2',  duracion: '00:13:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car', 'Jua', 'Her', 'Let', 'Tan'] },
-  { id: 's3',  acto: 'Reemplazo',      nombre: 'Tu consorcio mejoró',       numero: '9',  duracion: '00:10:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Bet', 'Jua', 'Her', 'Let', 'Tan'] },
-  { id: 's4',  acto: 'Cotidiana',      nombre: 'Los cuadros del tío',       numero: '3',  duracion: '00:01:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Ari', 'Car'] },
-  { id: 's5',  acto: 'Cotidiana',      nombre: '¿Seguís acá, bombón?',      numero: '4',  duracion: '00:02:00', planificado: '2026-04-30', ensayado: '2026-04-30', personajes: ['Let', 'Nic'] },
-  { id: 's6',  acto: 'Cotidiana',      nombre: '¡Estoy yendo, José!',       numero: '5',  duracion: '',         planificado: '2026-05-07', ensayado: '',           personajes: ['Jua', 'Jos'] },
-  { id: 's7',  acto: 'Cotidiana',      nombre: 'El ensayo de Tani',         numero: '6',  duracion: '',         planificado: '2026-05-07', ensayado: '',           personajes: ['Tan'] },
-  { id: 's8',  acto: 'Cotidiana',      nombre: 'Teléfono descompuesto',     numero: '7',  duracion: '',         planificado: '2026-05-07', ensayado: '',           personajes: ['Her', 'Lor'] },
-  { id: 's9',  acto: 'Cotidiana',      nombre: 'Es para cuidarte a vos',    numero: '8',  duracion: '',         planificado: '2026-05-07', ensayado: '',           personajes: ['Ari', 'Car'] },
-  { id: 's10', acto: 'Entrevistas',    nombre: 'Lo mejor era no atenderla', numero: '10', duracion: '00:05:00', planificado: '2026-05-14', ensayado: '',           personajes: ['Ari', 'Car', 'Bet'] },
-  { id: 's11', acto: 'Entrevistas',    nombre: 'Rituales paganos',          numero: '11', duracion: '00:04:00', planificado: '2026-05-14', ensayado: '',           personajes: ['Bet', 'Let'] },
-  { id: 's12', acto: 'Entrevistas',    nombre: 'AGSA',                      numero: '12', duracion: '',         planificado: '2026-05-14', ensayado: '',           personajes: ['Bet', 'Jua', 'Jos'] },
-  { id: 's13', acto: 'Entrevistas',    nombre: 'APSA no conoce de excepciones', numero: '13', duracion: '00:06:00', planificado: '2026-05-14', ensayado: '',       personajes: ['Bet', 'Her', 'Lor'] },
-  { id: 's14', acto: 'Entrevistas',    nombre: 'Bolsa de basura',           numero: '14', duracion: '00:04:00', planificado: '2026-05-21', ensayado: '',           personajes: ['Bet', 'Toñ', 'Tan'] },
-  { id: 's15', acto: 'Entrevistas',    nombre: '72 horas',                  numero: '15', duracion: '',         planificado: '2026-05-21', ensayado: '',           personajes: ['Ari', 'Bet'] },
-  { id: 's16', acto: 'Endurecimiento', nombre: 'APSA administra el bien',   numero: '16', duracion: '',         planificado: '2026-05-21', ensayado: '',           personajes: ['Ari', 'Bet', 'Her', 'Tan'] },
-  { id: 's17', acto: 'Ejecuciones',    nombre: 'Ariel no se va',            numero: '17', duracion: '',         planificado: '2026-05-21', ensayado: '',           personajes: ['Ari', 'Car', 'Bet'] },
-  { id: 's18', acto: 'Ejecuciones',    nombre: 'No más llantos',            numero: '18', duracion: '',         planificado: '2026-05-28', ensayado: '',           personajes: ['Her', 'Lor', 'Tan'] },
-  { id: 's19', acto: 'Ejecuciones',    nombre: 'Felizmente separada',       numero: '19', duracion: '',         planificado: '2026-05-28', ensayado: '',           personajes: ['Ari', 'Car'] },
-  { id: 's20', acto: 'Ejecuciones',    nombre: 'Dolor espiritual',          numero: '20', duracion: '',         planificado: '2026-05-28', ensayado: '',           personajes: ['Bet', 'Her', 'Let'] },
-  { id: 's21', acto: 'Ejecuciones',    nombre: 'Campo o departamento',      numero: '21', duracion: '',         planificado: '2026-05-28', ensayado: '',           personajes: ['Bet', 'Jua', 'Jos', 'Let', 'Tan'] },
-  { id: 's22', acto: 'Ejecuciones',    nombre: 'Chau, Ariel',               numero: '22', duracion: '',         planificado: '2026-06-04', ensayado: '',           personajes: ['Ari', 'Car', 'Toñ'] },
-  { id: 's23', acto: 'Festejo',        nombre: 'Chau, Carla',               numero: '23', duracion: '',         planificado: '2026-06-04', ensayado: '',           personajes: ['Ari', 'Car', 'Bet', 'Toñ', 'Jua', 'Jos', 'Her', 'Lor', 'Let', 'Nic', 'Tan'] },
-  { id: 's24', acto: 'Epílogo',        nombre: 'Ficus Lyrata',              numero: '24', duracion: '',         planificado: '2026-06-04', ensayado: '',           personajes: [] },
-];
-
-// Las escenas iniciales se "migran" al formato nuevo (con array de sesiones) en tiempo
-// de carga; así no hace falta reescribir las 24 entries de arriba a mano. Reusamos
-// migrateScenes para que también se aplique la conversión de `ensayado` a boolean.
-const INITIAL_SCENES = migrateScenes(INITIAL_SCENES_RAW);
 
 // ============================================================
 // HELPERS
@@ -1671,8 +1639,10 @@ function App({ repo }) {
         const { scenes: loaded, missing } = await loadFromGithub(repo);
         if (cancelled) return;
         if (missing) {
-          setScenes(INITIAL_SCENES);
-          setSavedSnapshot('__missing__'); // marca: nunca existió, tiene que crearse al guardar
+          // Primer arranque: data.json todavía no existe en el repo. Comenzamos con
+          // lista vacía. Cuando el admin agregue la primera escena y guarde, se crea.
+          setScenes([]);
+          setSavedSnapshot('__missing__');
           setLoadError({ type: 'missing' });
         } else {
           setScenes(loaded);
@@ -1680,7 +1650,7 @@ function App({ repo }) {
         }
       } catch (e) {
         if (cancelled) return;
-        setScenes(INITIAL_SCENES);
+        setScenes([]);
         setSavedSnapshot('__error__');
         setLoadError({ type: 'error', message: e.message });
       } finally {
@@ -1889,16 +1859,16 @@ function App({ repo }) {
   const handleReset = useCallback(() => {
     if (!dirty) return;
     if (!confirm('¿Descartar los cambios no guardados y volver a la última versión guardada?')) return;
-    // savedSnapshot puede ser '__missing__' o '__error__' si la carga inicial falló.
-    // En esos casos, restauramos a las escenas iniciales.
+    // savedSnapshot puede ser '__missing__' o '__error__' si la carga inicial falló o
+    // el data.json todavía no existe. En esos casos volvemos a lista vacía.
     if (savedSnapshot === '__missing__' || savedSnapshot === '__error__') {
-      setScenes(INITIAL_SCENES);
+      setScenes([]);
       return;
     }
     try {
       setScenes(JSON.parse(savedSnapshot));
     } catch (_) {
-      setScenes(INITIAL_SCENES);
+      setScenes([]);
     }
   }, [dirty, savedSnapshot]);
 
@@ -2032,8 +2002,8 @@ function App({ repo }) {
             }}>
               <IconAlert size={14} style={{ color: 'var(--warning)' }}/>
               <span>
-                Todavía no existe <code>{DATA_FILE}</code> en el repo. Estás viendo los datos iniciales —
-                {isAdmin ? ' guardá para crearlo.' : ' iniciá sesión como admin para guardar el cronograma real.'}
+                Todavía no existe <code>{DATA_FILE}</code> en el repo.
+                {isAdmin ? ' Agregá escenas y guardá para crearlo.' : ' Iniciá sesión como admin para crear las escenas.'}
               </span>
             </div>
           )}
