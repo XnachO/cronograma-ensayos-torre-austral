@@ -1747,18 +1747,6 @@ function App({ repo }) {
     }
   }, [repo, scenes, token, saveStatus]);
 
-  // Atajo Ctrl/Cmd+S
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        if (isAdmin && dirty) doSave();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isAdmin, dirty, doSave]);
-
   // Auto-scroll a próxima fecha (1 vez)
   const initialScrollDone = useRef(false);
   useEffect(() => {
@@ -1899,10 +1887,49 @@ function App({ repo }) {
     setIsCopying(false);
   }, [draggingSesionId]);
   const handleReset = useCallback(() => {
-    if (confirm('¿Restaurar la lista original de escenas? Se perderán los cambios actuales (hasta que guardes).')) {
+    if (!dirty) return;
+    if (!confirm('¿Descartar los cambios no guardados y volver a la última versión guardada?')) return;
+    // savedSnapshot puede ser '__missing__' o '__error__' si la carga inicial falló.
+    // En esos casos, restauramos a las escenas iniciales.
+    if (savedSnapshot === '__missing__' || savedSnapshot === '__error__') {
+      setScenes(INITIAL_SCENES);
+      return;
+    }
+    try {
+      setScenes(JSON.parse(savedSnapshot));
+    } catch (_) {
       setScenes(INITIAL_SCENES);
     }
-  }, []);
+  }, [dirty, savedSnapshot]);
+
+  // Atajos: Ctrl/Cmd+S guarda, Ctrl/Cmd+Z descarta cambios. El Ctrl+Z solo se intercepta
+  // cuando el foco NO está en un input/textarea/contenteditable, así no pisamos el deshacer
+  // nativo del navegador dentro de los campos editables.
+  useEffect(() => {
+    const handler = (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        if (isAdmin && dirty) doSave();
+        return;
+      }
+      if ((e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        const t = e.target;
+        const isFieldFocused = t && (
+          t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+          t.isContentEditable
+        );
+        if (isFieldFocused) return; // dejar que el navegador haga su deshacer nativo
+        if (isAdmin && dirty) {
+          e.preventDefault();
+          handleReset();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isAdmin, dirty, doSave, handleReset]);
   const handleExport = useCallback(() => exportToXLSX(scenes), [scenes]);
   const handleLogout = useCallback(() => {
     if (dirty && !confirm('Tenés cambios sin guardar. ¿Cerrar sesión igual?')) return;
@@ -1975,7 +2002,9 @@ function App({ repo }) {
                     }}>
                     <IconSave size={13}/> {saveLabel}
                   </button>
-                  <button onClick={handleReset} className="btn-icon" title="Restaurar escenas iniciales">
+                  <button onClick={handleReset} disabled={!dirty} className="btn-icon"
+                    title={dirty ? 'Descartar cambios no guardados (Ctrl+Z)' : 'No hay cambios para descartar'}
+                    style={{ opacity: dirty ? 1 : 0.4, cursor: dirty ? 'pointer' : 'not-allowed' }}>
                     <IconRotateCcw size={14}/>
                   </button>
                   <button onClick={handleLogout} className="btn-icon" title="Cerrar sesión">
