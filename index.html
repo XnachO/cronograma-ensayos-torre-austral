@@ -527,6 +527,7 @@ function SceneCard({
       <div style={{ padding: '8px 10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <span className="text-accent border-accent"
+            title={scene.numero ? `Escena ${scene.numero}` : 'Escena sin número'}
             style={{
               fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
               backgroundColor: 'var(--accent-soft)',
