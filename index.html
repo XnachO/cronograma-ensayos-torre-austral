@@ -532,11 +532,11 @@ function SceneCard({
   const dragHandlers = isAdmin ? {
     draggable: true,
     onDragStart: (e) => {
-      // Alt durante el dragstart = duplicar
-      const isCopy = e.altKey;
-      e.dataTransfer.effectAllowed = isCopy ? 'copy' : 'move';
+      // effectAllowed = 'copyMove' permite que el usuario decida copy o move recién al
+      // soltar (pulsando Alt o Ctrl en cualquier momento del drag, no solo al iniciarlo).
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', dragId);
-      onDragStart(dragId, isCopy);
+      onDragStart(dragId);
     },
     onDragEnd: onDragEnd,
   } : {};
@@ -544,8 +544,9 @@ function SceneCard({
     onDragOver: (e) => {
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
-      if (!isDragging) onHoverAsDropTarget(dragId);
+      const isCopy = e.altKey || e.ctrlKey;
+      e.dataTransfer.dropEffect = isCopy ? 'copy' : 'move';
+      if (!isDragging) onHoverAsDropTarget(dragId, isCopy);
     },
   } : {};
   const showDropLine = isDropTarget && !isDragging;
@@ -610,8 +611,9 @@ function DateColumn({
   const dropHandlers = isAdmin ? {
     onDragOver: (e) => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
-      onColumnDragOver(dateKey);
+      const isCopy = e.altKey || e.ctrlKey;
+      e.dataTransfer.dropEffect = isCopy ? 'copy' : 'move';
+      onColumnDragOver(dateKey, isCopy);
     },
     onDragLeave: (e) => {
       const rect = e.currentTarget.getBoundingClientRect();
@@ -619,7 +621,11 @@ function DateColumn({
         onColumnDragLeave();
       }
     },
-    onDrop: (e) => { e.preventDefault(); onColumnDrop(dateKey); },
+    onDrop: (e) => {
+      e.preventDefault();
+      const isCopy = e.altKey || e.ctrlKey;
+      onColumnDrop(dateKey, isCopy);
+    },
   } : {};
   // Para los avisos de cobertura del reparto: una escena cuenta una sola vez, aunque tenga
   // varias sesiones el mismo día (no deberían pero por las dudas).
@@ -696,7 +702,7 @@ function DateColumn({
             // Si la escena que se está arrastrando ya tiene OTRA sesión en este día,
             // marcamos el hover como conflicto.
             dropConflict={hasConflict && draggingSceneId === scene.id && draggingSesionId !== sesion.id}
-            onHoverAsDropTarget={(sesionId) => onCardHover(dateKey, sesionId)}
+            onHoverAsDropTarget={(sesionId, isCopy) => onCardHover(dateKey, sesionId, isCopy)}
           />
         ))}
       </div>
@@ -704,14 +710,19 @@ function DateColumn({
   );
 }
 
-function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, isCopying, onDragStart, onDragEnd, isAdmin }) {
+function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, onDragStart, onDragEnd, isAdmin }) {
   const [overKey, setOverKey] = useState(null);
   const [dropBeforeId, setDropBeforeId] = useState(null);
+  // isCopying se actualiza en vivo durante el drag al detectar Alt o Ctrl. Determina
+  // el cálculo de conflictos y el feedback visual (línea de drop, mensaje en columna vacía).
+  // La decisión final (copy vs move) la toma el handler de drop leyendo el evento directo.
+  const [isCopying, setIsCopying] = useState(false);
 
   useEffect(() => {
     if (draggingSesionId === null) {
       setOverKey(null);
       setDropBeforeId(null);
+      setIsCopying(false);
     }
   }, [draggingSesionId]);
 
@@ -777,29 +788,41 @@ function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, isCopying, 
     return future[0] || null;
   }, [groups]);
 
-  const handleColumnDragOver = useCallback((dateKey) => {
+  // setter: solo dispara re-render si cambió, para evitar re-renders en cada dragOver (que fire constantemente)
+  const updateCopying = useCallback((isCopy) => {
+    setIsCopying(prev => prev !== isCopy ? isCopy : prev);
+  }, []);
+
+  const handleColumnDragOver = useCallback((dateKey, isCopy) => {
     setOverKey(dateKey);
     setDropBeforeId(null);
-  }, []);
+    updateCopying(isCopy);
+  }, [updateCopying]);
   const handleColumnDragLeave = useCallback(() => {
     setOverKey(null);
     setDropBeforeId(null);
   }, []);
-  const handleCardHover = useCallback((dateKey, sesionId) => {
+  const handleCardHover = useCallback((dateKey, sesionId, isCopy) => {
     setOverKey(dateKey);
     setDropBeforeId(sesionId);
-  }, []);
-  const handleColumnDrop = useCallback((dateKey) => {
-    // Bloquear si hay conflicto
-    if (conflictDateKeys.has(dateKey)) {
-      setOverKey(null);
-      setDropBeforeId(null);
+    updateCopying(isCopy);
+  }, [updateCopying]);
+  const handleColumnDrop = useCallback((dateKey, isCopy) => {
+    // Bloquear si la escena ya tiene una sesión en esa fecha. La validación se hace
+    // con isCopy del evento de drop (no con el estado isCopying), por si el usuario
+    // soltó el modificador justo antes de soltar el botón.
+    if (!draggingCard) return;
+    const existingInDate = (draggingCard.scene.sesiones || []).some(ses =>
+      (ses.planificado || '') === (dateKey || '') &&
+      (isCopy ? true : ses.id !== draggingSesionId)
+    );
+    if (existingInDate) {
+      setOverKey(null); setDropBeforeId(null); setIsCopying(false);
       return;
     }
-    onMoveSesion(dateKey, dropBeforeId, isCopying);
-    setOverKey(null);
-    setDropBeforeId(null);
-  }, [onMoveSesion, dropBeforeId, conflictDateKeys, isCopying]);
+    onMoveSesion(dateKey, dropBeforeId, isCopy);
+    setOverKey(null); setDropBeforeId(null); setIsCopying(false);
+  }, [onMoveSesion, dropBeforeId, draggingCard, draggingSesionId]);
 
   return (
     <div data-board-scroll className="scrolly" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, paddingTop: 12, paddingRight: 16 }}>
@@ -1621,7 +1644,6 @@ function App({ repo }) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [draggingSesionId, setDraggingSesionId] = useState(null);
-  const [isCopying, setIsCopying] = useState(false);
   const [query, setQuery] = useState('');
 
   const [token, setToken] = useState(null);
@@ -1810,7 +1832,7 @@ function App({ repo }) {
   const handleMoveSesion = useCallback((targetDateKey, beforeSesionId = null, copy = false) => {
     if (!draggingSesionId) return;
     // Soltar sobre sí misma: no-op (move) o sí permitido (copy)
-    if (!copy && beforeSesionId === draggingSesionId) { setDraggingSesionId(null); setIsCopying(false); return; }
+    if (!copy && beforeSesionId === draggingSesionId) { setDraggingSesionId(null); return; }
 
     setScenes(prev => {
       // Encontramos la escena y la sesión que se arrastra
@@ -1854,7 +1876,6 @@ function App({ repo }) {
       });
     });
     setDraggingSesionId(null);
-    setIsCopying(false);
   }, [draggingSesionId]);
   const handleReset = useCallback(() => {
     if (!dirty) return;
@@ -2065,9 +2086,8 @@ function App({ repo }) {
             onEdit={(s) => { setIsNewScene(false); setEditing(s); }}
             onMoveSesion={handleMoveSesion}
             draggingSesionId={draggingSesionId}
-            isCopying={isCopying}
-            onDragStart={(sesionId, copy) => { setDraggingSesionId(sesionId); setIsCopying(!!copy); }}
-            onDragEnd={() => { setDraggingSesionId(null); setIsCopying(false); }}
+            onDragStart={(sesionId) => setDraggingSesionId(sesionId)}
+            onDragEnd={() => setDraggingSesionId(null)}
             isAdmin={isAdmin}/>
         ) : (
           <TableView scenes={filteredScenes}
