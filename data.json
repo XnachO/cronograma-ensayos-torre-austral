@@ -1,0 +1,311 @@
+[
+  {
+    "id": "s1",
+    "acto": "Prólogo",
+    "nombre": "Un gusto, Ariel",
+    "numero": "1",
+    "duracion": "00:04:00",
+    "personajes": [
+      "Ari",
+      "Car"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s2",
+    "acto": "Motín",
+    "nombre": "Hasta acá tu gestión",
+    "numero": "2",
+    "duracion": "00:13:00",
+    "personajes": [
+      "Ari",
+      "Car",
+      "Jua",
+      "Her",
+      "Let",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s3",
+    "acto": "Reemplazo",
+    "nombre": "Tu consorcio mejoró",
+    "numero": "9",
+    "duracion": "00:10:00",
+    "personajes": [
+      "Bet",
+      "Jua",
+      "Her",
+      "Let",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s4",
+    "acto": "Cotidiana",
+    "nombre": "Los cuadros del tío",
+    "numero": "3",
+    "duracion": "00:01:00",
+    "personajes": [
+      "Ari",
+      "Car"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s5",
+    "acto": "Cotidiana",
+    "nombre": "¿Seguís acá, bombón?",
+    "numero": "4",
+    "duracion": "00:02:00",
+    "personajes": [
+      "Let",
+      "Nic"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s6",
+    "acto": "Cotidiana",
+    "nombre": "¡Estoy yendo, José!",
+    "numero": "5",
+    "duracion": "",
+    "personajes": [
+      "Jua",
+      "Jos"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s7",
+    "acto": "Cotidiana",
+    "nombre": "El ensayo de Tani",
+    "numero": "6",
+    "duracion": "",
+    "personajes": [
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s8",
+    "acto": "Cotidiana",
+    "nombre": "Teléfono descompuesto",
+    "numero": "7",
+    "duracion": "",
+    "personajes": [
+      "Her",
+      "Lor"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s9",
+    "acto": "Cotidiana",
+    "nombre": "Es para cuidarte a vos",
+    "numero": "8",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Car"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s10",
+    "acto": "Entrevistas",
+    "nombre": "Lo mejor era no atenderla",
+    "numero": "10",
+    "duracion": "00:05:00",
+    "personajes": [
+      "Ari",
+      "Car",
+      "Bet"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s11",
+    "acto": "Entrevistas",
+    "nombre": "Rituales paganos",
+    "numero": "11",
+    "duracion": "00:04:00",
+    "personajes": [
+      "Bet",
+      "Let"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s12",
+    "acto": "Entrevistas",
+    "nombre": "AGSA",
+    "numero": "12",
+    "duracion": "",
+    "personajes": [
+      "Bet",
+      "Jua",
+      "Jos"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s13",
+    "acto": "Entrevistas",
+    "nombre": "APSA no conoce de excepciones",
+    "numero": "13",
+    "duracion": "00:06:00",
+    "personajes": [
+      "Bet",
+      "Her",
+      "Lor"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s14",
+    "acto": "Entrevistas",
+    "nombre": "Bolsa de basura",
+    "numero": "14",
+    "duracion": "00:04:00",
+    "personajes": [
+      "Bet",
+      "Toñ",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s15",
+    "acto": "Entrevistas",
+    "nombre": "72 horas",
+    "numero": "15",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Bet"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s16",
+    "acto": "Endurecimiento",
+    "nombre": "APSA administra el bien",
+    "numero": "16",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Bet",
+      "Her",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s17",
+    "acto": "Ejecuciones",
+    "nombre": "Ariel no se va",
+    "numero": "17",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Car",
+      "Bet"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s18",
+    "acto": "Ejecuciones",
+    "nombre": "No más llantos",
+    "numero": "18",
+    "duracion": "",
+    "personajes": [
+      "Her",
+      "Lor",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s19",
+    "acto": "Ejecuciones",
+    "nombre": "Felizmente separada",
+    "numero": "19",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Car"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s20",
+    "acto": "Ejecuciones",
+    "nombre": "Dolor espiritual",
+    "numero": "20",
+    "duracion": "",
+    "personajes": [
+      "Bet",
+      "Her",
+      "Let"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s21",
+    "acto": "Ejecuciones",
+    "nombre": "Campo o departamento",
+    "numero": "21",
+    "duracion": "",
+    "personajes": [
+      "Bet",
+      "Jua",
+      "Jos",
+      "Let",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s22",
+    "acto": "Ejecuciones",
+    "nombre": "Chau, Ariel",
+    "numero": "22",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Car",
+      "Toñ"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s23",
+    "acto": "Festejo",
+    "nombre": "Chau, Carla",
+    "numero": "23",
+    "duracion": "",
+    "personajes": [
+      "Ari",
+      "Car",
+      "Bet",
+      "Jua",
+      "Her",
+      "Let",
+      "Tan"
+    ],
+    "sesiones": []
+  },
+  {
+    "id": "s24",
+    "acto": "Epílogo",
+    "nombre": "Ficus Lyrata",
+    "numero": "24",
+    "duracion": "",
+    "personajes": [],
+    "sesiones": []
+  }
+]
