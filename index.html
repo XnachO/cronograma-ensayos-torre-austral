@@ -538,7 +538,15 @@ function SceneCard({
               fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em',
               flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{scene.acto || 'sin acto'}</span>
-          {sesionOrdinal && (
+          {sesionOrdinal === 1 && (
+            <span title={totalSesiones > 1 ? `Sesión 1 de ${totalSesiones}` : 'Primera vez que se ensaya'}
+              style={{
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                padding: '1px 5px', borderRadius: 8,
+                background: 'rgba(47,107,72,0.12)', color: 'var(--rehearsed)',
+              }}>1ra vez</span>
+          )}
+          {sesionOrdinal > 1 && (
             <span className="text-muted" title={`Sesión ${sesionOrdinal} de ${totalSesiones}`}
               style={{
                 fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
@@ -661,7 +669,7 @@ function DateColumn({
             isDragging={draggingSesionId === sesion.id}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             isAdmin={isAdmin}
-            sesionOrdinal={totalSesiones > 1 ? sesionOrdinal : null}
+            sesionOrdinal={sesionOrdinal}
             totalSesiones={totalSesiones}
           />
         ))}
