@@ -14,6 +14,11 @@
         "id": "ses_cwoer79b",
         "planificado": "2026-04-16",
         "ensayado": true
+      },
+      {
+        "id": "ses_qf4ic77k",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -36,6 +41,11 @@
         "id": "ses_co4ylwd4",
         "planificado": "2026-04-30",
         "ensayado": true
+      },
+      {
+        "id": "ses_j2x7rrse",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -80,6 +90,11 @@
         "id": "ses_zbb4ifjx",
         "planificado": "2026-04-30",
         "ensayado": true
+      },
+      {
+        "id": "ses_jmaqzaif",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -98,6 +113,11 @@
         "id": "ses_thzd9b15",
         "planificado": "2026-04-30",
         "ensayado": true
+      },
+      {
+        "id": "ses_dvccqkmf",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -133,6 +153,11 @@
         "id": "ses_o8rb61in",
         "planificado": "2026-05-07",
         "ensayado": false
+      },
+      {
+        "id": "ses_ws8d31qs",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -150,6 +175,11 @@
       {
         "id": "ses_f7m74sn0",
         "planificado": "2026-05-07",
+        "ensayado": false
+      },
+      {
+        "id": "ses_5yenunoj",
+        "planificado": "2026-05-14",
         "ensayado": false
       }
     ]
@@ -193,6 +223,11 @@
         "id": "ses_u3lwivyi",
         "planificado": "2026-05-07",
         "ensayado": false
+      },
+      {
+        "id": "ses_jirn4ub0",
+        "planificado": "2026-05-14",
+        "ensayado": false
       }
     ]
   },
@@ -210,6 +245,11 @@
       {
         "id": "ses_cwzt1mkg",
         "planificado": "2026-05-07",
+        "ensayado": false
+      },
+      {
+        "id": "ses_nh6ofy6p",
+        "planificado": "2026-05-14",
         "ensayado": false
       }
     ]
@@ -285,6 +325,11 @@
       {
         "id": "ses_x0fljdnx",
         "planificado": "2026-05-21",
+        "ensayado": false
+      },
+      {
+        "id": "ses_focnm05q",
+        "planificado": "2026-05-14",
         "ensayado": false
       }
     ]
