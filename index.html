@@ -728,23 +728,38 @@ function BoardView({ scenes, onEdit, onMoveSesion, draggingSesionId, onDragStart
   const groups = useMemo(() => {
     const map = new Map();
     map.set('', []);
+    const today = todayISO();
+    // Una sesión "pasada sin ensayar" es una que ya pasó y no fue marcada como ensayada.
+    // No cuenta para el ordinal (no muestra badge) ni para el total.
+    const isPastMissed = (ses) =>
+      !!ses.planificado && ses.planificado < today && !ses.ensayado;
     scenes.forEach(scene => {
       const sesiones = scene.sesiones || [];
-      const total = sesiones.length;
       if (sesiones.length === 0) {
         // escena sin ninguna sesión → la mostramos como "Sin asignar"
         map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: false }, sesionOrdinal: 0, totalSesiones: 0, isPhantom: true });
         return;
       }
-      // Asignar ordinal por fecha asc. Sesiones sin fecha quedan al final.
+      // Ordinal cronológico, salteando sesiones pasadas sin ensayar.
+      // Sesiones sin fecha se ordenan al final y cuentan como futuras.
+      const sortedByDate = [...sesiones].sort(
+        (a, b) => (a.planificado || '\uFFFF').localeCompare(b.planificado || '\uFFFF')
+      );
+      const countableTotal = sortedByDate.filter(s => !isPastMissed(s)).length;
       const ordinalById = new Map();
-      [...sesiones]
-        .sort((a, b) => (a.planificado || '\uFFFF').localeCompare(b.planificado || '\uFFFF'))
-        .forEach((s, i) => ordinalById.set(s.id, i + 1));
+      let counter = 0;
+      sortedByDate.forEach(ses => {
+        if (isPastMissed(ses)) {
+          ordinalById.set(ses.id, null);
+        } else {
+          counter += 1;
+          ordinalById.set(ses.id, counter);
+        }
+      });
       sesiones.forEach(sesion => {
         const k = sesion.planificado || '';
         if (!map.has(k)) map.set(k, []);
-        map.get(k).push({ scene, sesion, sesionOrdinal: ordinalById.get(sesion.id), totalSesiones: total });
+        map.get(k).push({ scene, sesion, sesionOrdinal: ordinalById.get(sesion.id), totalSesiones: countableTotal });
       });
     });
     // Sort por número de escena dentro de cada columna
