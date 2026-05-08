@@ -189,7 +189,7 @@
     "acto": "Cotidiana",
     "nombre": "Es para cuidarte a vos",
     "numero": "8",
-    "duracion": "",
+    "duracion": "00:01:30",
     "personajes": [
       "Ari",
       "Car"
@@ -198,7 +198,7 @@
       {
         "id": "ses_wh4glgzi",
         "planificado": "2026-05-07",
-        "ensayado": false
+        "ensayado": true
       },
       {
         "id": "ses_j7bwop29",
