@@ -144,7 +144,7 @@
     "acto": "Cotidiana",
     "nombre": "El ensayo de Tani",
     "numero": "6",
-    "duracion": "00:03:30",
+    "duracion": "00:05:30",
     "personajes": [
       "Tan"
     ],
@@ -152,7 +152,7 @@
       {
         "id": "ses_o8rb61in",
         "planificado": "2026-05-07",
-        "ensayado": false
+        "ensayado": true
       },
       {
         "id": "ses_ws8d31qs",
