@@ -639,6 +639,60 @@ function SceneCard({
   );
 }
 
+function CopyColumnBtn({ cards, label, sublabel }) {
+  const [copied, setCopied] = useState(false);
+
+  const buildText = () => {
+    const lines = [`Escenas para el ${label.toLowerCase()}:`];
+    cards.forEach(({ scene }) => {
+      const num = scene.numero ? `#${scene.numero} ` : '';
+      const acto = scene.acto ? `${scene.acto}: ` : '';
+      const nombre = scene.nombre || 'sin título';
+      lines.push(`* ${num}${acto}${nombre}`);
+    });
+    return lines.join('\n');
+  };
+
+  const handleClick = async (e) => {
+    e.stopPropagation();
+    const text = buildText();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback para contextos sin Clipboard API (HTTP, navegadores viejos)
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch (_) {
+      // Si todo falla, no hacemos nada (no rompemos la app)
+    }
+  };
+
+  return (
+    <button onClick={handleClick}
+      title={copied ? 'Copiado al portapapeles' : 'Copiar lista de escenas'}
+      style={{
+        padding: '2px 4px', display: 'inline-flex', alignItems: 'center', gap: 3,
+        background: copied ? 'rgba(47,107,72,0.12)' : 'transparent',
+        border: '1px solid ' + (copied ? 'var(--rehearsed)' : 'var(--border)'),
+        borderRadius: 3, cursor: 'pointer', fontFamily: 'inherit',
+        color: copied ? 'var(--rehearsed)' : 'var(--ink-soft)',
+        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+      }}>
+      {copied ? <IconCheck size={11}/> : <IconCopy size={11}/>}
+    </button>
+  );
+}
+
 function DateColumn({
   dateKey, label, sublabel, cards, onColumnDragOver, onColumnDragLeave, onColumnDrop,
   onEdit, totalSec,
