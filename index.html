@@ -499,6 +499,7 @@ const IconExternal = (p) => <Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0
 const IconRefresh = (p) => <Icon {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></Icon>;
 const IconArrowUp = (p) => <Icon {...p}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></Icon>;
 const IconArrowDown = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></Icon>;
+const IconCopy = (p) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
 
 // ============================================================
 // COMPONENTES
@@ -683,9 +684,14 @@ function DateColumn({
         borderTop: `${isNext ? 4 : 2}px solid ${accent}`,
         borderRadius: '8px 8px 0 0', position: 'relative',
       }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <h3 className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500, textTransform: 'capitalize' }}>{label}</h3>
-          <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>{cards.length}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          <h3 className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500, textTransform: 'capitalize', lineHeight: 1.2 }}>{label}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '0 0 auto' }}>
+            {dateKey !== '' && cards.length > 0 && (
+              <CopyColumnBtn cards={cards} label={label} sublabel={sublabel}/>
+            )}
+            <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>{cards.length}</span>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
           <span className="text-muted" style={{ fontSize: 11 }}>{sublabel}</span>
@@ -1508,18 +1514,25 @@ async function exportToXLSX(scenes) {
   scenes.forEach(s => {
     const sesiones = s.sesiones || [];
     if (sesiones.length === 0) {
-      flatRows.push({ scene: s, planificado: '', ensayado: null });
+      flatRows.push({ scene: s, planificado: '', ensayado: null, orden: null });
     } else {
       sesiones.forEach(ses => flatRows.push({
-        scene: s, planificado: ses.planificado || '', ensayado: !!ses.ensayado,
+        scene: s,
+        planificado: ses.planificado || '',
+        ensayado: !!ses.ensayado,
+        orden: typeof ses.orden === 'number' ? ses.orden : null,
       }));
     }
   });
-  // Orden: por fecha planificada asc, luego por número de escena
+  // Orden: por fecha planificada asc, luego por `orden` manual de la sesión,
+  // luego por número de escena para desempatar.
   flatRows.sort((a, b) => {
     const pa = a.planificado || '9999-99-99';
     const pb = b.planificado || '9999-99-99';
     if (pa !== pb) return pa.localeCompare(pb);
+    const oa = a.orden === null ? Infinity : a.orden;
+    const ob = b.orden === null ? Infinity : b.orden;
+    if (oa !== ob) return oa - ob;
     return sortByNumero(a.scene, b.scene);
   });
   const dataRows = flatRows.map(({ scene: s, planificado, ensayado }) => [
