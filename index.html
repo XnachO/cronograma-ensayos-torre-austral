@@ -500,6 +500,7 @@ const IconRefresh = (p) => <Icon {...p}><polyline points="23 4 23 10 17 10"/><po
 const IconArrowUp = (p) => <Icon {...p}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></Icon>;
 const IconArrowDown = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></Icon>;
 const IconCopy = (p) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+const IconUsers = (p) => <Icon {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
 
 // ============================================================
 // COMPONENTES
@@ -639,19 +640,10 @@ function SceneCard({
   );
 }
 
-function CopyColumnBtn({ cards, label, sublabel }) {
+// Botón genérico de copia con feedback visual. Recibe una función que arma el texto y
+// el ícono/tooltip a mostrar. Lo usamos para las dos vistas de copiado del tablero.
+function CopyBtn({ buildText, icon: BaseIcon, title }) {
   const [copied, setCopied] = useState(false);
-
-  const buildText = () => {
-    const lines = [`Escenas para el ${label.toLowerCase()}:`];
-    cards.forEach(({ scene }) => {
-      const num = scene.numero ? `#${scene.numero} ` : '';
-      const acto = scene.acto ? `${scene.acto}: ` : '';
-      const nombre = scene.nombre || 'sin título';
-      lines.push(`* ${num}${acto}${nombre}`);
-    });
-    return lines.join('\n');
-  };
 
   const handleClick = async (e) => {
     e.stopPropagation();
@@ -679,7 +671,7 @@ function CopyColumnBtn({ cards, label, sublabel }) {
 
   return (
     <button onClick={handleClick}
-      title={copied ? 'Copiado al portapapeles' : 'Copiar lista de escenas'}
+      title={copied ? 'Copiado al portapapeles' : title}
       style={{
         padding: '2px 4px', display: 'inline-flex', alignItems: 'center', gap: 3,
         background: copied ? 'rgba(47,107,72,0.12)' : 'transparent',
@@ -688,9 +680,45 @@ function CopyColumnBtn({ cards, label, sublabel }) {
         color: copied ? 'var(--rehearsed)' : 'var(--ink-soft)',
         transition: 'background 0.15s, border-color 0.15s, color 0.15s',
       }}>
-      {copied ? <IconCheck size={11}/> : <IconCopy size={11}/>}
+      {copied ? <IconCheck size={11}/> : <BaseIcon size={11}/>}
     </button>
   );
+}
+
+function CopyColumnBtn({ cards, label }) {
+  const buildText = () => {
+    const lines = [`Escenas para el ${label.toLowerCase()}:`];
+    cards.forEach(({ scene }) => {
+      const num = scene.numero ? `#${scene.numero} ` : '';
+      const acto = scene.acto ? `${scene.acto}: ` : '';
+      const nombre = scene.nombre || 'sin título';
+      lines.push(`* ${num}${acto}${nombre}`);
+    });
+    return lines.join('\n');
+  };
+  return <CopyBtn buildText={buildText} icon={IconCopy} title="Copiar lista de escenas"/>;
+}
+
+function CopyByActorBtn({ cards, label }) {
+  const buildText = () => {
+    const lines = [`Escenas por actor — ${label.toLowerCase()}:`];
+    ACTORS.forEach(actor => {
+      const escenasDelActor = cards.filter(({ scene }) =>
+        actor.characters.some(c => scene.personajes.includes(c))
+      );
+      if (escenasDelActor.length === 0) return;
+      lines.push('');
+      lines.push(`${actor.label}:`);
+      escenasDelActor.forEach(({ scene }) => {
+        const num = scene.numero ? `#${scene.numero} ` : '';
+        const acto = scene.acto ? `${scene.acto}: ` : '';
+        const nombre = scene.nombre || 'sin título';
+        lines.push(`* ${num}${acto}${nombre}`);
+      });
+    });
+    return lines.join('\n');
+  };
+  return <CopyBtn buildText={buildText} icon={IconUsers} title="Copiar escenas agrupadas por actor"/>;
 }
 
 function DateColumn({
@@ -742,7 +770,10 @@ function DateColumn({
           <h3 className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500, textTransform: 'capitalize', lineHeight: 1.2 }}>{label}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '0 0 auto' }}>
             {dateKey !== '' && cards.length > 0 && (
-              <CopyColumnBtn cards={cards} label={label} sublabel={sublabel}/>
+              <>
+                <CopyColumnBtn cards={cards} label={label} sublabel={sublabel}/>
+                <CopyByActorBtn cards={cards} label={label}/>
+              </>
             )}
             <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>{cards.length}</span>
           </div>
