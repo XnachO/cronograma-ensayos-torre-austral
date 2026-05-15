@@ -19,7 +19,7 @@
       {
         "id": "ses_qf4ic77k",
         "planificado": "2026-05-14",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 1000
       }
     ]
@@ -48,7 +48,7 @@
       {
         "id": "ses_j2x7rrse",
         "planificado": "2026-05-14",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
       }
     ]
@@ -136,7 +136,7 @@
     "acto": "Cotidiana",
     "nombre": "¡Estoy yendo, José!",
     "numero": "5",
-    "duracion": "",
+    "duracion": "00:03:00",
     "personajes": [
       "Jua",
       "Jos"
@@ -145,7 +145,7 @@
       {
         "id": "ses_utkcszpt",
         "planificado": "2026-05-14",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 10000
       }
     ]
@@ -280,7 +280,7 @@
     "acto": "Entrevistas",
     "nombre": "AGSA",
     "numero": "12",
-    "duracion": "",
+    "duracion": "00:06:30",
     "personajes": [
       "Bet",
       "Jua",
@@ -290,7 +290,7 @@
       {
         "id": "ses_k43m83ar",
         "planificado": "2026-05-14",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 11000
       }
     ]
