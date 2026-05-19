@@ -182,7 +182,7 @@
         "id": "ses_05b0re3e",
         "planificado": "2026-05-28",
         "ensayado": false,
-        "orden": 5000
+        "orden": 1000
       }
     ]
   },
@@ -211,7 +211,7 @@
       },
       {
         "id": "ses_meimox3n",
-        "planificado": "2026-06-11",
+        "planificado": "2026-06-04",
         "ensayado": false,
         "orden": 1000
       }
@@ -305,9 +305,9 @@
       },
       {
         "id": "ses_3zcjadbl",
-        "planificado": "2026-05-21",
+        "planificado": "2026-05-28",
         "ensayado": false,
-        "orden": 3000
+        "orden": 2000
       }
     ]
   },
@@ -331,9 +331,9 @@
       },
       {
         "id": "ses_km6tii7c",
-        "planificado": "2026-06-04",
+        "planificado": "2026-06-11",
         "ensayado": false,
-        "orden": 5000
+        "orden": 1000
       }
     ]
   },
@@ -357,9 +357,9 @@
       },
       {
         "id": "ses_sh8xanfg",
-        "planificado": "2026-05-21",
+        "planificado": "2026-05-28",
         "ensayado": false,
-        "orden": 4000
+        "orden": 3000
       }
     ]
   },
@@ -379,7 +379,7 @@
         "id": "ses_c33hn54i",
         "planificado": "2026-06-04",
         "ensayado": false,
-        "orden": 6000
+        "orden": 2000
       }
     ]
   },
@@ -419,7 +419,7 @@
         "id": "ses_ttnq3p23",
         "planificado": "2026-06-04",
         "ensayado": false,
-        "orden": 7000
+        "orden": 3000
       }
     ]
   },
@@ -437,9 +437,9 @@
     "sesiones": [
       {
         "id": "ses_rro83cqv",
-        "planificado": "2026-05-28",
+        "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 6000
+        "orden": 5000
       }
     ]
   },
@@ -476,9 +476,9 @@
     "sesiones": [
       {
         "id": "ses_ikw1o4ro",
-        "planificado": "2026-05-28",
+        "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 7000
+        "orden": 6000
       }
     ]
   },
@@ -520,7 +520,7 @@
         "id": "ses_vfviqd26",
         "planificado": "2026-05-28",
         "ensayado": false,
-        "orden": 8000
+        "orden": 4000
       }
     ]
   },
@@ -564,7 +564,7 @@
         "id": "ses_b1lnu9t1",
         "planificado": "2026-06-04",
         "ensayado": false,
-        "orden": 8000
+        "orden": 4000
       }
     ]
   },
