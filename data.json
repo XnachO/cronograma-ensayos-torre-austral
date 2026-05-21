@@ -77,7 +77,7 @@
         "id": "ses_p2qdlv8c",
         "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 1000
+        "orden": 2000
       }
     ]
   },
@@ -276,7 +276,7 @@
         "id": "ses_liflgg1h",
         "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 2000
+        "orden": 3000
       }
     ]
   },
@@ -439,7 +439,7 @@
         "id": "ses_rro83cqv",
         "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 5000
+        "orden": 1000
       }
     ]
   },
@@ -478,7 +478,7 @@
         "id": "ses_ikw1o4ro",
         "planificado": "2026-05-21",
         "ensayado": false,
-        "orden": 6000
+        "orden": 4000
       }
     ]
   },
