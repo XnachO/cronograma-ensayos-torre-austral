@@ -428,7 +428,7 @@
     "acto": "Ejecuciones",
     "nombre": "Ariel no se va",
     "numero": "17",
-    "duracion": "",
+    "duracion": "00:03:00",
     "personajes": [
       "Ari",
       "Car",
@@ -468,7 +468,7 @@
     "acto": "Ejecuciones",
     "nombre": "Felizmente separada",
     "numero": "19",
-    "duracion": "",
+    "duracion": "00:01:30",
     "personajes": [
       "Ari",
       "Car"
