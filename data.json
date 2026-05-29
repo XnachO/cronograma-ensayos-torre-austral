@@ -167,7 +167,7 @@
     "acto": "Cotidiana",
     "nombre": "El ensayo de Tani",
     "numero": "6",
-    "duracion": "00:05:30",
+    "duracion": "00:06:00",
     "personajes": [
       "Tan"
     ],
@@ -181,7 +181,7 @@
       {
         "id": "ses_05b0re3e",
         "planificado": "2026-05-28",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 1000
       }
     ]
@@ -285,7 +285,7 @@
     "acto": "Entrevistas",
     "nombre": "Rituales paganos",
     "numero": "11",
-    "duracion": "00:04:00",
+    "duracion": "00:04:30",
     "personajes": [
       "Bet",
       "Let"
@@ -306,7 +306,7 @@
       {
         "id": "ses_3zcjadbl",
         "planificado": "2026-05-28",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
       }
     ]
