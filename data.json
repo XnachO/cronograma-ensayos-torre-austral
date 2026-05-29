@@ -211,7 +211,7 @@
       },
       {
         "id": "ses_meimox3n",
-        "planificado": "2026-06-04",
+        "planificado": "2026-06-25",
         "ensayado": false,
         "orden": 1000
       }
@@ -342,7 +342,7 @@
     "acto": "Entrevistas",
     "nombre": "APSA no conoce de excepciones",
     "numero": "13",
-    "duracion": "00:06:00",
+    "duracion": "00:05:00",
     "personajes": [
       "Bet",
       "Her",
@@ -358,7 +358,7 @@
       {
         "id": "ses_sh8xanfg",
         "planificado": "2026-05-28",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 3000
       }
     ]
@@ -379,7 +379,7 @@
         "id": "ses_c33hn54i",
         "planificado": "2026-06-04",
         "ensayado": false,
-        "orden": 2000
+        "orden": 1000
       }
     ]
   },
@@ -419,7 +419,7 @@
         "id": "ses_ttnq3p23",
         "planificado": "2026-06-04",
         "ensayado": false,
-        "orden": 3000
+        "orden": 2000
       }
     ]
   },
@@ -521,6 +521,12 @@
         "planificado": "2026-05-28",
         "ensayado": false,
         "orden": 4000
+      },
+      {
+        "id": "ses_qttj3g5l",
+        "planificado": "2026-06-04",
+        "ensayado": false,
+        "orden": 3000
       }
     ]
   },
