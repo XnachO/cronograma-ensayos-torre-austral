@@ -407,7 +407,7 @@
     "acto": "Endurecimiento",
     "nombre": "APSA administra el bien",
     "numero": "16",
-    "duracion": "",
+    "duracion": "00:06:00",
     "personajes": [
       "Ari",
       "Bet",
@@ -418,7 +418,7 @@
       {
         "id": "ses_ttnq3p23",
         "planificado": "2026-06-04",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 1000
       }
     ]
@@ -507,7 +507,7 @@
     "acto": "Ejecuciones",
     "nombre": "Campo o departamento",
     "numero": "21",
-    "duracion": "",
+    "duracion": "00:04:00",
     "personajes": [
       "Bet",
       "Jua",
@@ -525,7 +525,7 @@
       {
         "id": "ses_qttj3g5l",
         "planificado": "2026-06-04",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
       }
     ]
@@ -535,7 +535,7 @@
     "acto": "Ejecuciones",
     "nombre": "Chau, Ariel",
     "numero": "22",
-    "duracion": "",
+    "duracion": "00:01:30",
     "personajes": [
       "Ari",
       "Car",
@@ -545,7 +545,7 @@
       {
         "id": "ses_we8i2939",
         "planificado": "2026-06-04",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 3000
       }
     ]
