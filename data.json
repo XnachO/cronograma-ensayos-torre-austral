@@ -397,7 +397,7 @@
       {
         "id": "ses_x0fljdnx",
         "planificado": "2026-06-11",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
       }
     ]
@@ -448,7 +448,7 @@
     "acto": "Ejecuciones",
     "nombre": "No más llantos",
     "numero": "18",
-    "duracion": "",
+    "duracion": "00:02:00",
     "personajes": [
       "Her",
       "Lor",
@@ -458,7 +458,7 @@
       {
         "id": "ses_i2tx4s50",
         "planificado": "2026-06-11",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 1000
       }
     ]
