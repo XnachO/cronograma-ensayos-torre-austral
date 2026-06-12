@@ -388,7 +388,7 @@
     "acto": "Entrevistas",
     "nombre": "72 horas",
     "numero": "15",
-    "duracion": "",
+    "duracion": "00:04:00",
     "personajes": [
       "Ari",
       "Bet"
@@ -555,7 +555,7 @@
     "acto": "Festejo",
     "nombre": "Chau, Carla",
     "numero": "23",
-    "duracion": "00:04:00",
+    "duracion": "",
     "personajes": [
       "Ari",
       "Car",
