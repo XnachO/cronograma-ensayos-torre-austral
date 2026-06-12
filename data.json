@@ -555,7 +555,7 @@
     "acto": "Festejo",
     "nombre": "Chau, Carla",
     "numero": "23",
-    "duracion": "",
+    "duracion": "00:04:00",
     "personajes": [
       "Ari",
       "Car",
@@ -575,7 +575,7 @@
       {
         "id": "ses_52rjxfyw",
         "planificado": "2026-06-11",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 3000
       }
     ]
