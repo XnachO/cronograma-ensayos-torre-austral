@@ -163,7 +163,7 @@
       {
         "id": "ses_9rgiefg6",
         "planificado": "2026-06-18",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
       }
     ]
@@ -384,7 +384,7 @@
       {
         "id": "ses_c33hn54i",
         "planificado": "2026-06-18",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 1000
       }
     ]
@@ -504,7 +504,7 @@
         "id": "ses_1czd25jr",
         "planificado": "2026-06-25",
         "ensayado": false,
-        "orden": 2000
+        "orden": 1000
       }
     ]
   },
@@ -588,7 +588,7 @@
         "id": "ses_3ne3d9yc",
         "planificado": "2026-06-25",
         "ensayado": false,
-        "orden": 1000
+        "orden": 2000
       }
     ]
   },
