@@ -487,6 +487,7 @@ const IconX = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1=
 const IconClock = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
 const IconLayoutGrid = (p) => <Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
 const IconTable = (p) => <Icon {...p}><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></Icon>;
+const IconListChecks = (p) => <Icon {...p}><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></Icon>;
 const IconRotateCcw = (p) => <Icon {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></Icon>;
 const IconEdit = (p) => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Icon>;
 const IconCheck = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
@@ -1246,6 +1247,95 @@ function ThSort({ children, onClick, style }) {
       }}>{children}</th>
   );
 }
+
+// Vista "Escenas": pantallazo de solo lectura agrupado por acto, con duración de cada escena,
+// subtotal por acto y total general.
+function ScenesByActView({ scenes }) {
+  const grupos = useMemo(() => {
+    // Agrupar por texto exacto del campo `acto`. Orden de actos: por el número de escena más
+    // bajo dentro de cada acto (orden de la obra). Escenas dentro de cada acto: por número.
+    const map = new Map();
+    scenes.forEach(s => {
+      const k = s.acto || 'Sin acto';
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(s);
+    });
+    const arr = Array.from(map.entries()).map(([acto, items]) => {
+      const ordenadas = [...items].sort(sortByNumero);
+      const totalSec = ordenadas.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0);
+      const minNum = Math.min(...ordenadas.map(s => parseInt(s.numero, 10) || Infinity));
+      return { acto, items: ordenadas, totalSec, minNum };
+    });
+    arr.sort((a, b) => a.minNum - b.minNum);
+    return arr;
+  }, [scenes]);
+
+  const totalGeneral = useMemo(
+    () => scenes.reduce((sum, s) => sum + parseDurationToSec(s.duracion), 0),
+    [scenes]
+  );
+
+  if (scenes.length === 0) {
+    return <div className="text-muted" style={{ padding: 24, fontStyle: 'italic', fontSize: 13 }}>No hay escenas para mostrar.</div>;
+  }
+
+  return (
+    <div style={{ maxWidth: 720, paddingBottom: 24 }}>
+      <div className="bg-paper-dim border-paper" style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        padding: '12px 16px', borderRadius: 8, border: '1px solid', marginBottom: 16,
+      }}>
+        <span className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500 }}>Duración total de la obra</span>
+        <span className="text-rehearsed" style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {formatSecCompact(totalGeneral)}
+        </span>
+      </div>
+
+      {grupos.map(({ acto, items, totalSec }) => (
+        <div key={acto} className="bg-paper border-paper" style={{
+          borderRadius: 8, border: '1px solid', marginBottom: 12, overflow: 'hidden',
+        }}>
+          <div className="bg-paper-dim border-paper" style={{
+            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+            padding: '8px 14px', borderBottom: '1px solid',
+          }}>
+            <h3 className="font-display text-ink" style={{ fontSize: 14, fontWeight: 500 }}>{acto}</h3>
+            <span className="text-ink-soft" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <IconClock size={11}/>{totalSec > 0 ? formatSecCompact(totalSec) : '—'}
+            </span>
+          </div>
+          <div>
+            {items.map((s, i) => {
+              const sec = parseDurationToSec(s.duracion);
+              return (
+                <div key={s.id} className="border-paper" style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '7px 14px',
+                  borderBottom: i < items.length - 1 ? '1px solid' : 'none',
+                }}>
+                  <span className="text-accent border-accent" style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+                    backgroundColor: 'var(--accent-soft)', padding: '1px 6px',
+                    borderRadius: 2, border: '1px solid', whiteSpace: 'nowrap',
+                    minWidth: 28, textAlign: 'center',
+                  }}>#{s.numero || '—'}</span>
+                  <span className="font-display text-ink" style={{ flex: 1, fontSize: 14 }}>
+                    {s.nombre || <span className="text-muted" style={{ fontStyle: 'italic' }}>Sin título</span>}
+                  </span>
+                  <span style={{
+                    fontSize: 12, fontVariantNumeric: 'tabular-nums',
+                    color: sec > 0 ? 'var(--ink-soft)' : 'var(--muted)',
+                  }}>{sec > 0 ? formatSecCompact(sec) : '—'}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 function Th({ children, colSpan, center, style }) {
   return (
@@ -2202,6 +2292,7 @@ function App({ repo }) {
               <div className="bg-paper border-paper" style={{ display: 'inline-flex', borderRadius: 4, border: '1px solid', overflow: 'hidden', fontSize: 12 }}>
                 <ViewBtn active={view === 'board'} onClick={() => setView('board')}><IconLayoutGrid size={13}/> Tablero</ViewBtn>
                 <ViewBtn active={view === 'table'} onClick={() => setView('table')}><IconTable size={13}/> Tabla</ViewBtn>
+                <ViewBtn active={view === 'escenas'} onClick={() => setView('escenas')}><IconListChecks size={13}/> Escenas</ViewBtn>
               </div>
               {isAdmin && (
                 <button onClick={handleAdd} className="btn-primary"><IconPlus size={13}/> Nueva escena</button>
@@ -2317,7 +2408,7 @@ function App({ repo }) {
             onDragStart={(sesionId) => setDraggingSesionId(sesionId)}
             onDragEnd={() => setDraggingSesionId(null)}
             isAdmin={isAdmin}/>
-        ) : (
+        ) : view === 'table' ? (
           <TableView scenes={filteredScenes}
             onUpdate={handleUpdate}
             onUpdateSesion={handleUpdateSesion}
@@ -2326,6 +2417,8 @@ function App({ repo }) {
             onDelete={handleDelete}
             onEdit={(s) => { setIsNewScene(false); setEditing(s); }}
             isAdmin={isAdmin}/>
+        ) : (
+          <ScenesByActView scenes={filteredScenes}/>
         )}
 
         {filteredScenes.length === 0 && scenes.length > 0 && (
