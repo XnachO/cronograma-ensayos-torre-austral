@@ -138,7 +138,7 @@
       {
         "id": "ses_c0p5xklq",
         "planificado": "2026-06-25",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 5000
       }
     ]
@@ -283,6 +283,12 @@
         "planificado": "2026-05-14",
         "ensayado": false,
         "orden": 7000
+      },
+      {
+        "id": "ses_g1orqon4",
+        "planificado": "2026-06-25",
+        "ensayado": true,
+        "orden": 11000
       }
     ]
   },
@@ -493,7 +499,7 @@
     "acto": "Ejecuciones",
     "nombre": "Dolor espiritual",
     "numero": "20",
-    "duracion": "",
+    "duracion": "00:02:00",
     "personajes": [
       "Bet",
       "Her",
@@ -502,8 +508,8 @@
     "sesiones": [
       {
         "id": "ses_1czd25jr",
-        "planificado": "2026-06-25",
-        "ensayado": false,
+        "planificado": "2026-07-30",
+        "ensayado": true,
         "orden": 1000
       }
     ]
@@ -533,6 +539,12 @@
         "planificado": "2026-06-04",
         "ensayado": true,
         "orden": 2000
+      },
+      {
+        "id": "ses_ud681hqt",
+        "planificado": "2026-07-30",
+        "ensayado": true,
+        "orden": 5000
       }
     ]
   },
@@ -587,8 +599,14 @@
       {
         "id": "ses_3ne3d9yc",
         "planificado": "2026-06-25",
-        "ensayado": false,
+        "ensayado": true,
         "orden": 2000
+      },
+      {
+        "id": "ses_brcomx5d",
+        "planificado": "2026-07-30",
+        "ensayado": true,
+        "orden": 5000
       }
     ]
   },
