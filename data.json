@@ -139,7 +139,7 @@
         "id": "ses_c0p5xklq",
         "planificado": "2026-06-25",
         "ensayado": true,
-        "orden": 5000
+        "orden": 1000
       }
     ]
   },
@@ -219,7 +219,7 @@
         "id": "ses_meimox3n",
         "planificado": "2026-06-25",
         "ensayado": false,
-        "orden": 3000
+        "orden": 4000
       }
     ]
   },
@@ -288,7 +288,7 @@
         "id": "ses_g1orqon4",
         "planificado": "2026-06-25",
         "ensayado": true,
-        "orden": 11000
+        "orden": 2000
       }
     ]
   },
@@ -345,7 +345,7 @@
         "id": "ses_km6tii7c",
         "planificado": "2026-06-25",
         "ensayado": false,
-        "orden": 4000
+        "orden": 5000
       }
     ]
   },
@@ -600,7 +600,7 @@
         "id": "ses_3ne3d9yc",
         "planificado": "2026-06-25",
         "ensayado": true,
-        "orden": 2000
+        "orden": 3000
       },
       {
         "id": "ses_brcomx5d",
