@@ -372,6 +372,12 @@
         "planificado": "2026-05-28",
         "ensayado": true,
         "orden": 3000
+      },
+      {
+        "id": "ses_6ql1n8ic",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 10000
       }
     ]
   },
@@ -392,6 +398,12 @@
         "planificado": "2026-06-18",
         "ensayado": true,
         "orden": 1000
+      },
+      {
+        "id": "ses_emun6837",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 2000
       }
     ]
   },
@@ -411,6 +423,12 @@
         "planificado": "2026-06-11",
         "ensayado": true,
         "orden": 2000
+      },
+      {
+        "id": "ses_glmmust5",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 11000
       }
     ]
   },
@@ -432,6 +450,12 @@
         "planificado": "2026-06-04",
         "ensayado": true,
         "orden": 1000
+      },
+      {
+        "id": "ses_cgzwim0c",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 12000
       }
     ]
   },
@@ -452,6 +476,12 @@
         "planificado": "2026-05-21",
         "ensayado": true,
         "orden": 1000
+      },
+      {
+        "id": "ses_j7g9rqwg",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 13000
       }
     ]
   },
@@ -472,6 +502,12 @@
         "planificado": "2026-06-11",
         "ensayado": true,
         "orden": 1000
+      },
+      {
+        "id": "ses_7tywklz0",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 14000
       }
     ]
   },
@@ -491,6 +527,12 @@
         "planificado": "2026-05-21",
         "ensayado": true,
         "orden": 4000
+      },
+      {
+        "id": "ses_ysdukvkf",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 5000
       }
     ]
   },
@@ -511,6 +553,12 @@
         "planificado": "2026-07-30",
         "ensayado": true,
         "orden": 1000
+      },
+      {
+        "id": "ses_rsg7tmcx",
+        "planificado": "2026-08-06",
+        "ensayado": false,
+        "orden": 15000
       }
     ]
   },
