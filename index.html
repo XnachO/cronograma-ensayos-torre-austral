@@ -844,7 +844,158 @@ function DateColumn({
   );
 }
 
-function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, onDragStart, onDragEnd, isAdmin }) {
+// Columna al final del tablero para crear una sesión nueva: se elige la fecha y se
+// tildan las escenas de la lista completa. Las escenas que ya tienen una sesión en esa
+// fecha aparecen deshabilitadas (el modelo no admite dos sesiones de la misma escena
+// el mismo día).
+function NewSessionColumn({ scenes, existingDates, onCreate }) {
+  const [fecha, setFecha] = useState('');
+  const [seleccion, setSeleccion] = useState(() => new Set());
+  const [filtro, setFiltro] = useState('');
+
+  const ordenadas = useMemo(() => [...scenes].sort(sortByNumero), [scenes]);
+
+  // IDs de escenas que ya tienen sesión en la fecha elegida
+  const yaEnFecha = useMemo(() => {
+    if (!fecha) return new Set();
+    const out = new Set();
+    scenes.forEach(s => {
+      if ((s.sesiones || []).some(x => (x.planificado || '') === fecha)) out.add(s.id);
+    });
+    return out;
+  }, [scenes, fecha]);
+
+  const visibles = useMemo(() => {
+    const q = filtro.trim().toLowerCase();
+    if (!q) return ordenadas;
+    return ordenadas.filter(s =>
+      String(s.numero).includes(q) ||
+      (s.nombre || '').toLowerCase().includes(q) ||
+      (s.acto || '').toLowerCase().includes(q) ||
+      (s.personajes || []).some(p => p.toLowerCase().includes(q))
+    );
+  }, [ordenadas, filtro]);
+
+  const toggle = (id) => {
+    setSeleccion(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Escenas realmente creables: seleccionadas y sin conflicto en la fecha
+  const creables = useMemo(
+    () => Array.from(seleccion).filter(id => !yaEnFecha.has(id)),
+    [seleccion, yaEnFecha]
+  );
+  const totalSec = useMemo(
+    () => creables.reduce((sum, id) => {
+      const s = scenes.find(x => x.id === id);
+      return sum + (s ? parseDurationToSec(s.duracion) : 0);
+    }, 0),
+    [creables, scenes]
+  );
+
+  const fechaYaExiste = fecha && existingDates.includes(fecha);
+
+  const handleCrear = () => {
+    if (!fecha || creables.length === 0) return;
+    onCreate(fecha, creables);
+    setSeleccion(new Set());
+    setFiltro('');
+  };
+
+  return (
+    <div className="col-drop" style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column' }}>
+      <div className="bg-paper-dim border-paper" style={{
+        padding: '10px 12px', borderBottom: '1px solid',
+        borderTop: '2px dashed var(--border)',
+        borderRadius: '8px 8px 0 0',
+      }}>
+        <h3 className="font-display text-ink" style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>
+          Nueva sesión
+        </h3>
+        <input type="date" className="modal-input" value={fecha}
+          onChange={e => setFecha(e.target.value)}
+          style={{ width: '100%', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}/>
+        {fechaYaExiste && (
+          <div className="text-warning" style={{ fontSize: 10, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <IconAlert size={10}/> Ya hay escenas ese día; se van a sumar.
+          </div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 100 }}>
+        <input className="modal-input" value={filtro} onChange={e => setFiltro(e.target.value)}
+          placeholder="Filtrar escenas…" style={{ fontSize: 12, padding: '4px 8px' }}/>
+
+        <div className="scrolly bg-paper border-paper" style={{
+          flex: 1, minHeight: 140, maxHeight: 340, overflowY: 'auto',
+          border: '1px solid', borderRadius: 4,
+        }}>
+          {visibles.length === 0 && (
+            <div className="text-muted" style={{ fontSize: 11, fontStyle: 'italic', padding: 10, textAlign: 'center' }}>
+              Sin coincidencias
+            </div>
+          )}
+          {visibles.map(s => {
+            const conflicto = yaEnFecha.has(s.id);
+            const checked = seleccion.has(s.id);
+            return (
+              <label key={s.id}
+                title={conflicto ? 'Esta escena ya tiene una sesión ese día' : (s.personajes || []).join(', ')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  padding: '5px 8px', fontSize: 12,
+                  cursor: conflicto ? 'not-allowed' : 'pointer',
+                  opacity: conflicto ? 0.4 : 1,
+                  background: checked && !conflicto ? 'var(--accent-soft)' : 'transparent',
+                }}>
+                <input type="checkbox" checked={checked && !conflicto} disabled={conflicto}
+                  onChange={() => toggle(s.id)}
+                  style={{ width: 14, height: 14, cursor: 'inherit', accentColor: 'var(--accent)', flex: '0 0 auto' }}/>
+                <span className="text-accent" style={{
+                  fontSize: 10, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                  minWidth: 22, textAlign: 'right', flex: '0 0 auto',
+                }}>#{s.numero || '—'}</span>
+                <span className="text-ink" style={{
+                  flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{s.nombre || 'Sin título'}</span>
+                <span className="text-muted" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums', flex: '0 0 auto' }}>
+                  {s.duracion ? formatSecCompact(parseDurationToSec(s.duracion)) : '—'}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
+          <span className="text-muted">
+            {creables.length} escena{creables.length !== 1 ? 's' : ''}
+          </span>
+          {totalSec > 0 && (
+            <span className="text-ink-soft" style={{ fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <IconClock size={10}/>{formatSecCompact(totalSec)}
+            </span>
+          )}
+        </div>
+
+        <button onClick={handleCrear} disabled={!fecha || creables.length === 0}
+          className="btn-primary"
+          style={{
+            justifyContent: 'center',
+            opacity: (!fecha || creables.length === 0) ? 0.45 : 1,
+            cursor: (!fecha || creables.length === 0) ? 'not-allowed' : 'pointer',
+          }}>
+          <IconPlus size={13}/> Crear sesión
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BoardView({ scenes, allScenes, onEdit, onMoveSesion, onReorder, onCreateSesion, draggingSesionId, onDragStart, onDragEnd, isAdmin }) {
   const [overKey, setOverKey] = useState(null);
   // isCopying se actualiza en vivo durante el drag al detectar Alt o Ctrl. Determina el
   // cálculo de conflictos y el feedback visual (mensaje en columna vacía). La decisión
@@ -893,7 +1044,6 @@ function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, 
   // Dentro de cada columna, las tarjetas se ordenan por número de escena.
   const groups = useMemo(() => {
     const map = new Map();
-    map.set('', []);
     const today = todayISO();
     // Una sesión "pasada sin ensayar" es una que ya pasó y no fue marcada como ensayada.
     // No cuenta para el ordinal (no muestra badge) ni para el total.
@@ -901,11 +1051,8 @@ function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, 
       !!ses.planificado && ses.planificado < today && !ses.ensayado;
     scenes.forEach(scene => {
       const sesiones = scene.sesiones || [];
-      if (sesiones.length === 0) {
-        // escena sin ninguna sesión → la mostramos como "Sin asignar"
-        map.get('').push({ scene, sesion: { id: 'phantom_' + scene.id, planificado: '', ensayado: false }, sesionOrdinal: 0, totalSesiones: 0, isPhantom: true });
-        return;
-      }
+      // Las escenas sin sesiones no se muestran en el tablero (viven en Tabla y Escenas).
+      if (sesiones.length === 0) return;
       // Ordinal cronológico, salteando sesiones pasadas sin ensayar.
       // Sesiones sin fecha se ordenan al final y cuentan como futuras.
       const sortedByDate = [...sesiones].sort(
@@ -935,11 +1082,8 @@ function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, 
       if (oa !== ob) return oa - ob;
       return sortByNumero(a.scene, b.scene);
     }));
-    const keys = Array.from(map.keys()).sort((a, b) => {
-      if (a === '') return -1;
-      if (b === '') return 1;
-      return a.localeCompare(b);
-    });
+    // Solo columnas con fecha real: descartamos la de sesiones sin fecha.
+    const keys = Array.from(map.keys()).filter(k => k !== '').sort((a, b) => a.localeCompare(b));
     return keys.map(k => ({ key: k, items: map.get(k) }));
   }, [scenes]);
 
@@ -984,9 +1128,9 @@ function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, 
         const totalSec = items.reduce((sum, c) => sum + parseDurationToSec(c.scene.duracion), 0);
         const rehearsedSec = items.reduce((sum, c) =>
           sum + (c.sesion && c.sesion.ensayado ? parseDurationToSec(c.scene.duracion) : 0), 0);
-        const label = key === '' ? 'Sin asignar' : formatDateLong(key);
-        const sublabel = key === '' ? (isAdmin ? 'arrastrá escenas para programarlas' : 'sin programar') : formatDateShort(key);
-        const accent = key === '' ? '#8a7d6b' : '#6b1f23';
+        const label = formatDateLong(key);
+        const sublabel = formatDateShort(key);
+        const accent = '#6b1f23';
         const conflict = conflictDateKeys.has(key);
         return (
           <DateColumn key={key} dateKey={key} label={label} sublabel={sublabel}
@@ -1006,6 +1150,9 @@ function BoardView({ scenes, onEdit, onMoveSesion, onReorder, draggingSesionId, 
           />
         );
       })}
+      {isAdmin && (
+        <NewSessionColumn scenes={allScenes || scenes} existingDates={groups.map(g => g.key)} onCreate={onCreateSesion}/>
+      )}
     </div>
   );
 }
@@ -2091,6 +2238,33 @@ function App({ repo }) {
       return { ...s, sesiones: (s.sesiones || []).filter(x => x.id !== sesionId) };
     }));
   }, []);
+  // Crea una sesión en `dateKey` para cada escena de `sceneIds` (desde la columna
+  // "Nueva sesión" del tablero). Ignora las escenas que ya tengan sesión ese día.
+  const handleCreateSesion = useCallback((dateKey, sceneIds) => {
+    if (!dateKey || !sceneIds || sceneIds.length === 0) return;
+    const ids = new Set(sceneIds);
+    setScenes(prev => {
+      // Orden de partida: el máximo que ya exista en esa columna
+      let maxOrden = -Infinity;
+      prev.forEach(s => (s.sesiones || []).forEach(ses => {
+        if ((ses.planificado || '') === dateKey && typeof ses.orden === 'number' && ses.orden > maxOrden) {
+          maxOrden = ses.orden;
+        }
+      }));
+      let siguiente = maxOrden === -Infinity ? 1000 : maxOrden + 1000;
+      // Recorremos en el orden del array de escenas para que el orden asignado sea estable
+      return prev.map(s => {
+        if (!ids.has(s.id)) return s;
+        const sesiones = s.sesiones || [];
+        // Conflicto: ya tiene una sesión ese día
+        if (sesiones.some(x => (x.planificado || '') === dateKey)) return s;
+        const nueva = { id: newSesionId(), planificado: dateKey, ensayado: false, orden: siguiente };
+        siguiente += 1000;
+        return { ...s, sesiones: [...sesiones, nueva] };
+      });
+    });
+  }, []);
+
   const handleAddSesion = useCallback((sceneId) => {
     setScenes(prev => prev.map(s => {
       if (s.id !== sceneId) return s;
@@ -2401,9 +2575,11 @@ function App({ repo }) {
 
         {view === 'board' ? (
           <BoardView scenes={filteredScenes}
+            allScenes={scenes}
             onEdit={(s) => { setIsNewScene(false); setEditing(s); }}
             onMoveSesion={handleMoveSesion}
             onReorder={handleReorderSesion}
+            onCreateSesion={handleCreateSesion}
             draggingSesionId={draggingSesionId}
             onDragStart={(sesionId) => setDraggingSesionId(sesionId)}
             onDragEnd={() => setDraggingSesionId(null)}
