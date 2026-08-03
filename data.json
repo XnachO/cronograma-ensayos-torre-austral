@@ -101,13 +101,13 @@
         "id": "ses_kyzrxzha",
         "planificado": "2026-08-20",
         "ensayado": false,
-        "orden": 1000
+        "orden": 3000
       },
       {
         "id": "ses_flbh5biy",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 3000
+        "orden": 9000
       }
     ]
   },
@@ -138,7 +138,7 @@
         "id": "ses_bb6b1i8t",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 4000
+        "orden": 3000
       }
     ]
   },
@@ -175,7 +175,7 @@
         "id": "ses_3zeqhgnm",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 5000
+        "orden": 4000
       }
     ]
   },
@@ -206,7 +206,7 @@
         "id": "ses_hif0tpto",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 6000
+        "orden": 5000
       }
     ]
   },
@@ -236,7 +236,7 @@
         "id": "ses_1kfggqxj",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 7000
+        "orden": 6000
       }
     ]
   },
@@ -273,13 +273,13 @@
         "id": "ses_q6mbxgw1",
         "planificado": "2026-08-20",
         "ensayado": false,
-        "orden": 2000
+        "orden": 1000
       },
       {
         "id": "ses_6kt259hz",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 8000
+        "orden": 7000
       }
     ]
   },
@@ -322,13 +322,13 @@
         "id": "ses_wdgjptf0",
         "planificado": "2026-08-20",
         "ensayado": false,
-        "orden": 3000
+        "orden": 2000
       },
       {
         "id": "ses_qruk0l9c",
         "planificado": "2026-08-27",
         "ensayado": false,
-        "orden": 9000
+        "orden": 8000
       }
     ]
   },
