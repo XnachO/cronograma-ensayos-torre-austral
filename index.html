@@ -1427,7 +1427,7 @@ function ScenesByActView({ scenes }) {
   }
 
   return (
-    <div style={{ maxWidth: 720, paddingBottom: 24 }}>
+    <div style={{ maxWidth: 900, paddingBottom: 24 }}>
       <div className="bg-paper-dim border-paper" style={{
         display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
         padding: '12px 16px', borderRadius: 8, border: '1px solid', marginBottom: 16,
@@ -1438,47 +1438,99 @@ function ScenesByActView({ scenes }) {
         </span>
       </div>
 
-      {grupos.map(({ acto, items, totalSec }) => (
-        <div key={acto} className="bg-paper border-paper" style={{
-          borderRadius: 8, border: '1px solid', marginBottom: 12, overflow: 'hidden',
-        }}>
-          <div className="bg-paper-dim border-paper" style={{
-            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-            padding: '8px 14px', borderBottom: '1px solid',
+      {/* Una sola tabla para todos los actos: garantiza que las columnas queden alineadas
+          entre actos y deja un único scroll horizontal (necesario en pantallas angostas).
+          table-layout: fixed + colgroup fija los anchos; minWidth evita que se apriete. */}
+      <div className="bg-paper border-paper" style={{ borderRadius: 8, border: '1px solid', overflow: 'hidden' }}>
+        <div className="scrolly" style={{ overflowX: 'auto' }}>
+          <table style={{
+            tableLayout: 'fixed', width: '100%', minWidth: 620,
+            borderCollapse: 'separate', borderSpacing: 0, fontSize: 12,
           }}>
-            <h3 className="font-display text-ink" style={{ fontSize: 14, fontWeight: 500 }}>{acto}</h3>
-            <span className="text-ink-soft" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <IconClock size={11}/>{totalSec > 0 ? formatSecCompact(totalSec) : '—'}
-            </span>
-          </div>
-          <div>
-            {items.map((s, i) => {
-              const sec = parseDurationToSec(s.duracion);
-              return (
-                <div key={s.id} className="border-paper" style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '7px 14px',
-                  borderBottom: i < items.length - 1 ? '1px solid' : 'none',
-                }}>
-                  <span className="text-accent border-accent" style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
-                    backgroundColor: 'var(--accent-soft)', padding: '1px 6px',
-                    borderRadius: 2, border: '1px solid', whiteSpace: 'nowrap',
-                    minWidth: 28, textAlign: 'center',
-                  }}>#{s.numero || '—'}</span>
-                  <span className="font-display text-ink" style={{ flex: 1, fontSize: 14 }}>
-                    {s.nombre || <span className="text-muted" style={{ fontStyle: 'italic' }}>Sin título</span>}
-                  </span>
-                  <span style={{
-                    fontSize: 12, fontVariantNumeric: 'tabular-nums',
-                    color: sec > 0 ? 'var(--ink-soft)' : 'var(--muted)',
-                  }}>{sec > 0 ? formatSecCompact(sec) : '—'}</span>
-                </div>
-              );
-            })}
-          </div>
+            <colgroup>
+              <col style={{ width: 46 }}/>
+              <col/>
+              {CHARACTERS.map(c => <col key={c} style={{ width: 26 }}/>)}
+              <col style={{ width: 68 }}/>
+            </colgroup>
+            <tbody>
+              {grupos.map(({ acto, items, totalSec }, gi) => (
+                <React.Fragment key={acto}>
+                  <tr className="bg-paper-dim">
+                    <td colSpan={CHARACTERS.length + 3} className="border-paper" style={{
+                      padding: '7px 14px', borderBottom: '1px solid',
+                      borderTop: gi === 0 ? 'none' : '1px solid var(--border)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                        <span className="font-display text-ink" style={{ fontSize: 14, fontWeight: 500 }}>{acto}</span>
+                        <span className="text-ink-soft" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconClock size={11}/>{totalSec > 0 ? formatSecCompact(totalSec) : '—'}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="bg-paper-dim">
+                    <td className="border-paper" style={{ borderBottom: '1px solid' }}/>
+                    <td className="border-paper" style={{ borderBottom: '1px solid' }}/>
+                    {CHARACTERS.map(c => {
+                      const grp = CHAR_GROUP_INFO[c];
+                      return (
+                        <td key={c} className="border-paper" title={charTooltip(c)} style={{
+                          textAlign: 'center', fontSize: 9, fontWeight: 700, padding: '3px 0',
+                          borderBottom: '1px solid', color: CHAR_COLORS[c],
+                          borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
+                        }}>{c}</td>
+                      );
+                    })}
+                    <td className="border-paper" style={{ borderBottom: '1px solid' }}/>
+                  </tr>
+                  {items.map(s => {
+                    const sec = parseDurationToSec(s.duracion);
+                    return (
+                      <tr key={s.id}>
+                        <td className="border-paper" style={{ borderBottom: '1px solid', padding: '5px 0 5px 14px' }}>
+                          <span className="text-accent border-accent" style={{
+                            fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+                            backgroundColor: 'var(--accent-soft)', padding: '1px 5px',
+                            borderRadius: 2, border: '1px solid', whiteSpace: 'nowrap',
+                          }}>#{s.numero || '—'}</span>
+                        </td>
+                        <td className="border-paper font-display text-ink" style={{
+                          borderBottom: '1px solid', padding: '5px 10px', fontSize: 14,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }} title={s.nombre || ''}>
+                          {s.nombre || <span className="text-muted" style={{ fontStyle: 'italic' }}>Sin título</span>}
+                        </td>
+                        {CHARACTERS.map(c => {
+                          const present = (s.personajes || []).includes(c);
+                          const grp = CHAR_GROUP_INFO[c];
+                          return (
+                            <td key={c} className="border-paper" style={{
+                              borderBottom: '1px solid', textAlign: 'center', padding: 0,
+                              borderRight: grp.isLastInGroup ? '1px solid var(--border)' : 'none',
+                            }}>
+                              <div title={present ? charTooltip(c) : undefined} style={{
+                                width: '100%', height: 24,
+                                background: present ? CHAR_COLORS[c] : 'transparent',
+                              }}/>
+                            </td>
+                          );
+                        })}
+                        <td className="border-paper" style={{
+                          borderBottom: '1px solid', padding: '5px 14px 5px 8px',
+                          textAlign: 'right', whiteSpace: 'nowrap',
+                          fontVariantNumeric: 'tabular-nums',
+                          color: sec > 0 ? 'var(--ink-soft)' : 'var(--muted)',
+                        }}>{sec > 0 ? formatSecCompact(sec) : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      </div>
     </div>
   );
 }
